@@ -183,15 +183,15 @@ table.break td.best{color:var(--exact);font-weight:700}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 /* ===== PASTE YOUR FIREBASE CONFIG HERE (see README) ===== */
-  const firebaseConfig = {
-    apiKey: "AIzaSyBBy5NkdujPEQUK-aOViFkpplo9-HkOTg8",
-    authDomain: "vroom-vroom-of-villainy.firebaseapp.com",
-    projectId: "vroom-vroom-of-villainy",
-    storageBucket: "vroom-vroom-of-villainy.firebasestorage.app",
-    messagingSenderId: "1003007933529",
-    appId: "1:1003007933529:web:9bec981c4d35987a648548",
-    measurementId: "G-24S82WS4PQ"
-  };
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBBy5NkdujPEQUK-aOViFkpplo9-HkOTg8",
+  authDomain: "vroom-vroom-of-villainy.firebaseapp.com",
+  projectId: "vroom-vroom-of-villainy",
+  storageBucket: "vroom-vroom-of-villainy.firebasestorage.app",
+  messagingSenderId: "1003007933529",
+  appId: "1:1003007933529:web:9bec981c4d35987a648548",
+  measurementId: "G-24S82WS4PQ"
+};
 /* ======================================================== */
 </script>
 <script>
@@ -390,7 +390,7 @@ function renderSession(race,sess){
   const myPick=me?pickArr(race.id,me.id,sess.k):null;
   let status=res?"Results are in. Points scored.":"Open for picks. Others’ picks stay hidden until results are entered.";
   const btns=[];
-  if(S.canWrite&&me&&!res)btns.push(`<button class="btn primary" data-act="edit-pick">${full(myPick)?"Change my picks":"Make my picks"}</button>`);
+  if(S.canWrite&&me&&!res)btns.push(`<button class="btn primary" data-act="edit-pick">${myPick&&myPick.some(Boolean)?"Change my picks":"Make my picks"}</button>`);
   if(S.canWrite)btns.push(`<button class="btn" data-act="edit-result">${res?"Edit results":"Enter results"}</button>`);
   if(!me&&!res&&S.canWrite)status+=" Choose who you are at the top to make picks.";
 
@@ -401,7 +401,7 @@ function renderSession(race,sess){
     ${ps.map((p,j)=>{
       const pk=pickArr(race.id,p.id,sess.k);
       const visible=res||p.id===S.me;
-      if(!visible){return `<td>${i===0?`<span class="chip blank">${full(pk)?"Locked in ✓":"No picks yet"}</span>`:""}</td>`}
+      if(!visible){return `<td>${i===0?`<span class="chip blank">${pk&&pk.some(Boolean)?"Locked in ✓":"No picks yet"}</span>`:""}</td>`}
       return `<td>${chip(pk&&pk[i],res?scores[j].marks[i]:"")}</td>`;
     }).join("")}</tr>`).join("");
   const total=res?`<tr class="total"><td></td><td style="color:var(--muted);font-size:.85rem">Points</td>${scores.map(s=>`<td class="pts">${s.pts}</td>`).join("")}</tr>`:"";
@@ -426,14 +426,14 @@ function renderPicker(race,sess){
   const teams=[];(L().drivers||[]).forEach(d=>{if(!teams.includes(d.t))teams.push(d.t)});
   const ordered=teams.flatMap(t=>(L().drivers||[]).filter(d=>d.t===t));
   return `<div class="panel">
-    <div class="panelhead"><div><h2>${title}</h2><div class="status">Tap drivers in finishing order. Tap ✕ to clear a spot.</div></div></div>
+    <div class="panelhead"><div><h2>${title}</h2><div class="status">Tap drivers in finishing order. Tap ✕ to clear a spot.${isResult?" All 5 spots are needed.":" You can leave spots empty, for example to pick only a top 3."}</div></div></div>
     <ol class="slots">${[0,1,2,3,4].map(i=>{const c=S.draft[i];const d=c?driver(c):null;
       return `<li class="${c?"filled":""}"><span class="p">P${i+1}</span>
-        <span class="who">${d?`${esc(d.n)}<small>${esc(d.t)}</small>`:`<span class="empty">${i===firstEmpty?"Next pick goes here":"Empty"}</span>`}</span>
+        <span class="who">${d?`${esc(d.n)}<small>${esc(d.t)}</small>`:`<span class="empty">${i===firstEmpty?"Next pick goes here":isResult?"Empty":"Empty (no pick)"}</span>`}</span>
         ${c?`${i>0?`<button data-act="slot-up" data-i="${i}" aria-label="Move up">↑</button>`:""}<button data-act="slot-clear" data-i="${i}" aria-label="Clear P${i+1}">✕</button>`:""}</li>`}).join("")}</ol>
     <div class="drivers">${ordered.map(d=>`<button class="drv" data-act="pick-driver" data-v="${esc(d.c)}" ${chosen.has(d.c)||firstEmpty<0?"disabled":""}><i style="background:${teamColor(d.t)}"></i><b>${esc(d.c)}</b><span>${esc(d.n)}</span></button>`).join("")}</div>
     <div class="actions">
-      <button class="btn primary" data-act="save-edit" ${full(S.draft)?"":"disabled"}>${isResult?"Save results":"Save picks"}</button>
+      <button class="btn primary" data-act="save-edit" ${(isResult?full(S.draft):S.draft.some(Boolean))?"":"disabled"}>${isResult?"Save results":"Save picks"}</button>
       <button class="btn ghost" data-act="cancel-edit">Cancel</button>
       ${isResult&&resultArr(race.id,sess.k)?`<button class="btn ghost" data-act="clear-result">Remove results</button>`:""}
     </div>
@@ -497,7 +497,7 @@ function renderSetup(){
     ${admin()?`<section>
       <h3 class="sec">Import past weekends</h3>
       <p class="hint">Paste the import text Claude made from your chat history, then load it. It adds picks and results and overwrites any matching sessions.</p>
-      <textarea id="importbox" spellcheck="false" placeholder='{"results":{"aus":{"q":["RUS","ANT","LEC","HAM","NOR"]}},"picks":{"aus":{"Mike":{"q":["NOR","PIA","VER","LEC","RUS"]}}}}'></textarea>
+      <textarea id="importbox" spellcheck="false" placeholder='{"results":{"aus":{"q":["RUS","ANT","LEC","HAM","NOR"]}},"picks":{"aus":{"Mike":{"q":["NOR","PIA","VER",null,null]}}}}'></textarea>
       <div class="actions" style="margin-top:8px"><button class="btn" data-act="import">Load into league</button></div>
     </section>`:`<p class="note">Setup is locked to the league admin.</p>`}
     ${S.canWrite&&admin()?`<div class="savebar"><button class="btn primary" data-act="setup-save">Save changes</button><button class="btn ghost" data-act="setup-reset">Discard</button><span>${S.setupDirty?"Unsaved changes":"All saved"}</span></div>`:""}
@@ -521,7 +521,7 @@ app.addEventListener("click",async e=>{
     case "slot-up":{const i=+b.dataset.i;[S.draft[i-1],S.draft[i]]=[S.draft[i],S.draft[i-1]];render();break}
     case "cancel-edit": S.editing=null;render();break;
     case "save-edit":{
-      const ed=S.editing;if(!full(S.draft))return;
+      const ed=S.editing;if(ed.type==="result"?!full(S.draft):!S.draft.some(Boolean))return;
       if(ed.type==="pick"){
         if(resultArr(ed.raceId,ed.k)&&!admin()){toast("Results are already in for this session");S.editing=null;render();return}
         const key=pickKey(ed.raceId,ed.pid);const cur=clone(S.picks[key]||{raceId:ed.raceId,playerId:ed.pid});
@@ -594,6 +594,9 @@ async function runImport(){
   const findPlayer=n=>players().find(p=>p.name.toLowerCase().trim()===String(n).toLowerCase().trim());
   const codes=new Set((L().drivers||[]).map(d=>d.c));
   const okArr=a=>Array.isArray(a)&&a.length===5&&a.every(c=>codes.has(String(c).toUpperCase()));
+  const isBlank=c=>c==null||String(c).trim()===""||String(c).trim()==="-";
+  const okPick=a=>{if(!Array.isArray(a)||a.length>5)return null;const out=[0,1,2,3,4].map(i=>isBlank(a[i])?null:String(a[i]).trim().toUpperCase());
+    if(!out.some(Boolean)||out.some(c=>c&&!codes.has(c)))return null;return out};
   const problems=[];const writes=[];
   const resultsOut={};const picksOut={};
   for(const [rk,sess] of Object.entries(data.results||{})){
@@ -607,7 +610,7 @@ async function runImport(){
     for(const [pn,sess] of Object.entries(byPlayer)){
       const p=findPlayer(pn);if(!p){problems.push("player "+pn);continue}
       const key=pickKey(r.id,p.id);const cur=picksOut[key]||clone(S.picks[key]||{raceId:r.id,playerId:p.id});
-      for(const [k,arr] of Object.entries(sess)){if(!["q","r","sq","s"].includes(k)||!okArr(arr)){problems.push(r.name+" "+k+" for "+pn);continue}cur[k]=arr.map(c=>String(c).toUpperCase())}
+      for(const [k,arr] of Object.entries(sess)){const pk=okPick(arr);if(!["q","r","sq","s"].includes(k)||!pk){problems.push(r.name+" "+k+" for "+pn);continue}cur[k]=pk}
       cur.updated=Date.now();picksOut[key]=cur;
     }
   }
