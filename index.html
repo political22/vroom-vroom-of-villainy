@@ -115,6 +115,12 @@ table.picks tr.total td{border-bottom:0;padding-top:10px;font-weight:600}
 .slots .empty{color:var(--muted);font-weight:400}
 .slots button{border:0;background:none;width:36px;height:36px;border-radius:6px;font-size:1rem;color:var(--muted)}
 .slots button:hover{background:var(--line)}
+.slots li{position:relative;background:var(--surface)}
+.slots li.filled{background:var(--soft)}
+.slots .grip{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;font-size:1.2rem;letter-spacing:-2px}
+.slots li.dragging{z-index:5;box-shadow:0 6px 18px rgba(0,0,0,.18);cursor:grabbing}
+.slots li.dragging .grip{cursor:grabbing}
+.slots li.over{border:2px solid var(--red)}
 .drivers{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-bottom:16px}
 .drv{display:flex;align-items:center;gap:8px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 8px;min-height:44px}
 .drv i{width:4px;height:26px;border-radius:2px;flex:none}
@@ -423,19 +429,23 @@ function renderPicker(race,sess){
   const title=isResult?`Official ${sess.name.toLowerCase()} top 5`:`${me?esc(me.name)+"’s":"Your"} ${sess.name.toLowerCase()} top 5`;
   const chosen=new Set(S.draft.filter(Boolean));
   const firstEmpty=S.draft.findIndex(x=>!x);
+  const existing=isResult?null:pickArr(race.id,S.editing.pid,sess.k);const had=!!(existing&&existing.some(Boolean));
+  const empty=!S.draft.some(Boolean);
   const teams=[];(L().drivers||[]).forEach(d=>{if(!teams.includes(d.t))teams.push(d.t)});
   const ordered=teams.flatMap(t=>(L().drivers||[]).filter(d=>d.t===t));
   return `<div class="panel">
-    <div class="panelhead"><div><h2>${title}</h2><div class="status">Tap drivers in finishing order. Tap ✕ to clear a spot.${isResult?" All 5 spots are needed.":" You can leave spots empty, for example to pick only a top 3."}</div></div></div>
+    <div class="panelhead"><div><h2>${title}</h2><div class="status">Tap drivers in finishing order. Drag ⋮⋮ to reorder, tap ✕ to clear a spot.${isResult?" All 5 spots are needed.":" You can leave spots empty, for example to pick only a top 3."}</div></div></div>
     <ol class="slots">${[0,1,2,3,4].map(i=>{const c=S.draft[i];const d=c?driver(c):null;
-      return `<li class="${c?"filled":""}"><span class="p">P${i+1}</span>
+      return `<li class="${c?"filled":""}" data-slot="${i}"><span class="p">P${i+1}</span>
         <span class="who">${d?`${esc(d.n)}<small>${esc(d.t)}</small>`:`<span class="empty">${i===firstEmpty?"Next pick goes here":isResult?"Empty":"Empty (no pick)"}</span>`}</span>
-        ${c?`${i>0?`<button data-act="slot-up" data-i="${i}" aria-label="Move up">↑</button>`:""}<button data-act="slot-clear" data-i="${i}" aria-label="Clear P${i+1}">✕</button>`:""}</li>`}).join("")}</ol>
+        ${c?`<button class="grip" data-grip="${i}" aria-label="Drag to reorder ${esc(d.n)}, or use arrow keys">⋮⋮</button><button data-act="slot-clear" data-i="${i}" aria-label="Clear P${i+1}">✕</button>`:""}</li>`}).join("")}</ol>
     <div class="drivers">${ordered.map(d=>`<button class="drv" data-act="pick-driver" data-v="${esc(d.c)}" ${chosen.has(d.c)||firstEmpty<0?"disabled":""}><i style="background:${teamColor(d.t)}"></i><b>${esc(d.c)}</b><span>${esc(d.n)}</span></button>`).join("")}</div>
     <div class="actions">
-      <button class="btn primary" data-act="save-edit" ${(isResult?full(S.draft):S.draft.some(Boolean))?"":"disabled"}>${isResult?"Save results":"Save picks"}</button>
+      <button class="btn primary" data-act="save-edit" ${(isResult?full(S.draft):(!empty||had))?"":"disabled"}>${isResult?"Save results":empty&&had?"Save (removes picks)":"Save picks"}</button>
+      ${isResult?`<button class="btn" data-act="fetch-result">Fetch from F1 data</button>`:""}
       <button class="btn ghost" data-act="cancel-edit">Cancel</button>
       ${isResult&&resultArr(race.id,sess.k)?`<button class="btn ghost" data-act="clear-result">Remove results</button>`:""}
+      ${!isResult&&had?`<button class="btn ghost" data-act="remove-picks">Remove these picks</button>`:""}
     </div>
   </div>`;
 }
@@ -495,6 +505,12 @@ function renderSetup(){
       <button class="btn" data-act="list-add" data-list="drivers" ${dis}>Add driver</button>
     </section>
     ${admin()?`<section>
+      <h3 class="sec">Fetch results automatically</h3>
+      <p class="hint">Fills in official top 5s for every past session that doesn’t have results yet, using the free OpenF1 data service. Sessions you’ve already entered aren’t touched.</p>
+      <div class="actions"><button class="btn" data-act="fetch-all">Fetch missing results</button></div>
+      <p class="note" id="fetchstatus" style="margin-top:8px" aria-live="polite">${esc(S.fetchStatus||"")}</p>
+    </section>
+    <section>
       <h3 class="sec">Import past weekends</h3>
       <p class="hint">Paste the import text Claude made from your chat history, then load it. It adds picks and results and overwrites any matching sessions.</p>
       <textarea id="importbox" spellcheck="false" placeholder='{"results":{"aus":{"q":["RUS","ANT","LEC","HAM","NOR"]}},"picks":{"aus":{"Mike":{"q":["NOR","PIA","VER",null,null]}}}}'></textarea>
@@ -521,12 +537,10 @@ app.addEventListener("click",async e=>{
     case "slot-up":{const i=+b.dataset.i;[S.draft[i-1],S.draft[i]]=[S.draft[i],S.draft[i-1]];render();break}
     case "cancel-edit": S.editing=null;render();break;
     case "save-edit":{
-      const ed=S.editing;if(ed.type==="result"?!full(S.draft):!S.draft.some(Boolean))return;
+      const ed=S.editing;if(ed.type==="result"&&!full(S.draft))return;
       if(ed.type==="pick"){
         if(resultArr(ed.raceId,ed.k)&&!admin()){toast("Results are already in for this session");S.editing=null;render();return}
-        const key=pickKey(ed.raceId,ed.pid);const cur=clone(S.picks[key]||{raceId:ed.raceId,playerId:ed.pid});
-        cur[ed.k]=S.draft.slice();cur.updated=Date.now();
-        if(await write("picks/"+key,cur)){toast("Picks saved");S.editing=null;render()}
+        await savePicks(ed);
       }else{
         const cur=clone(S.results[ed.raceId]||{raceId:ed.raceId});cur[ed.k]=S.draft.slice();cur.updated=Date.now();
         if(await write("results/"+ed.raceId,cur)){toast("Results saved. Points updated");S.editing=null;render()}
@@ -539,6 +553,16 @@ app.addEventListener("click",async e=>{
       if(pin.trim()===String(L().adminPin)){S.isAdmin=true;lsSet(ADMIN_KEY,"1");toast("Admin mode on")}else toast("That PIN doesn’t match");render();break}
     case "admin-off": S.isAdmin=false;lsSet(ADMIN_KEY,"0");S.setupDraft=null;render();break;
     case "import": await runImport();break;
+    case "fetch-all": b.disabled=true;await fetchAllMissing();break;
+    case "fetch-result":{const ed=S.editing;b.disabled=true;b.textContent="Fetching…";of1Cache={sessions:{},drivers:{}};
+      try{const x=await of1Top5(raceById(ed.raceId),ed.k);
+        if(x.error)toast(x.error);
+        else{S.draft=x.codes;toast(x.unknown.length?`Filled in, but ${x.unknown.join(", ")} isn’t in your driver list`:"Filled in. Check it, then tap Save results")}}
+      catch(e){toast("Couldn’t reach the F1 data service. Try again later")}
+      render();break}
+    case "remove-picks":{const ed=S.editing;const pl=players().find(p=>p.id===ed.pid);
+      if(!confirm(`Remove ${pl?pl.name+"’s":"these"} picks for this session?`))return;
+      S.draft=[null,null,null,null,null];await savePicks(ed);break}
     case "newplayer-add": S.newPlayers.push("");render();break;
     case "newplayer-rm": S.newPlayers.splice(+b.dataset.i,1);render();break;
     case "create":{
@@ -626,6 +650,114 @@ async function runImport(){
   }
   box.value="";toast("Imported. Standings updated");render();
 }
+async function savePicks(ed){
+  const key=pickKey(ed.raceId,ed.pid);const cur=clone(S.picks[key]||{raceId:ed.raceId,playerId:ed.pid});
+  const empty=!S.draft.some(Boolean);
+  if(empty){if(!cur[ed.k]){S.editing=null;render();return}delete cur[ed.k]}else cur[ed.k]=S.draft.slice();
+  cur.updated=Date.now();
+  if(await write("picks/"+key,cur)){toast(empty?"Picks removed":"Picks saved");S.editing=null;render()}
+}
+/* drag to reorder slots (mouse + touch) */
+let drag=null;
+function moveSlot(from,to){if(from===to)return;const item=S.draft[from];S.draft.splice(from,1);S.draft.splice(to,0,item)}
+app.addEventListener("pointerdown",e=>{
+  const g=e.target.closest("[data-grip]");if(!g||e.button>0)return;
+  e.preventDefault();
+  const li=g.closest("li");const from=+g.dataset.grip;
+  drag={from,over:from,li,startY:e.clientY};
+  li.classList.add("dragging");
+  try{g.setPointerCapture(e.pointerId)}catch(_){}
+});
+app.addEventListener("pointermove",e=>{
+  if(!drag)return;
+  drag.li.style.transform=`translateY(${e.clientY-drag.startY}px)`;
+  const items=[...document.querySelectorAll(".slots li")];
+  let over=drag.from;
+  items.forEach((li,i)=>{const r=li.getBoundingClientRect();if(e.clientY>=r.top&&e.clientY<=r.bottom&&li!==drag.li)over=i});
+  const first=items[0].getBoundingClientRect(),last=items[items.length-1].getBoundingClientRect();
+  if(e.clientY<first.top)over=0;if(e.clientY>last.bottom)over=items.length-1;
+  drag.over=over;
+  items.forEach((li,i)=>li.classList.toggle("over",i===over&&i!==drag.from));
+});
+function endDrag(cancel){if(!drag)return;const {from,over}=drag;drag=null;if(!cancel)moveSlot(from,over);render()}
+app.addEventListener("pointerup",()=>endDrag(false));
+app.addEventListener("pointercancel",()=>endDrag(true));
+app.addEventListener("keydown",e=>{
+  const g=e.target.closest&&e.target.closest("[data-grip]");if(!g)return;
+  const from=+g.dataset.grip;const to=e.key==="ArrowUp"?from-1:e.key==="ArrowDown"?from+1:null;
+  if(to==null||to<0||to>4)return;e.preventDefault();
+  [S.draft[from],S.draft[to]]=[S.draft[to],S.draft[from]];render();
+  const ng=document.querySelector(`[data-grip="${to}"]`);if(ng)ng.focus();
+});
+/* ---------- OpenF1 results lookup ---------- */
+const OF1="https://api.openf1.org/v1";
+const OF1_NAMES={q:["Qualifying"],r:["Race"],s:["Sprint"],sq:["Sprint Qualifying","Sprint Shootout"]};
+let of1Cache={sessions:{},drivers:{}};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function of1Get(path){
+  for(let attempt=0;attempt<4;attempt++){
+    const res=await fetch(OF1+path,{headers:{Accept:"application/json"}});
+    if(res.status===404)return null;
+    if(res.status===429){await sleep(1500*(attempt+1));continue}
+    if(!res.ok)throw new Error("http "+res.status);
+    return res.json();
+  }
+  throw new Error("rate limited");
+}
+async function of1Sessions(year){
+  if(!of1Cache.sessions[year])of1Cache.sessions[year]=(await of1Get("/sessions?year="+year))||[];
+  return of1Cache.sessions[year];
+}
+async function of1FindSession(race,k){
+  const list=await of1Sessions(+String(race.date).slice(0,4));
+  const rd=new Date(race.date+"T12:00:00Z").getTime();
+  return list.find(s=>OF1_NAMES[k].includes(s.session_name)&&Math.abs(new Date(s.date_start).getTime()-rd)<=4*864e5)||null;
+}
+async function of1Acronyms(meetingKey){
+  if(!of1Cache.drivers[meetingKey]){
+    const arr=(await of1Get("/drivers?meeting_key="+meetingKey))||[];const m={};
+    arr.forEach(d=>{if(d.driver_number&&d.name_acronym)m[d.driver_number]=String(d.name_acronym).toUpperCase()});
+    of1Cache.drivers[meetingKey]=m;
+  }
+  return of1Cache.drivers[meetingKey];
+}
+async function of1Top5(race,k){
+  if(!race.date)return {error:"This race has no date set"};
+  const s=await of1FindSession(race,k);
+  if(!s)return {error:"This session isn’t in the F1 data yet"};
+  const rows=(await of1Get("/session_result?session_key="+s.session_key))||[];
+  const top=rows.filter(r=>Number.isInteger(r.position)&&r.position>=1&&r.position<=5).sort((a,b)=>a.position-b.position);
+  if(top.length<5)return {error:"Official results aren’t published yet. Try again a bit later"};
+  const ac=await of1Acronyms(s.meeting_key);
+  const codes=new Set((L().drivers||[]).map(d=>d.c));
+  const out=[null,null,null,null,null];const unknown=[];
+  top.forEach(r=>{const c=ac[r.driver_number];if(c&&codes.has(c))out[r.position-1]=c;else unknown.push(c||("car #"+r.driver_number))});
+  return {codes:out,unknown};
+}
+async function fetchAllMissing(){
+  of1Cache={sessions:{},drivers:{}};
+  const now=Date.now();const todo=[];
+  races().forEach(r=>{if(r.date&&new Date(r.date+"T23:59:59Z").getTime()<now)sessionsFor(r).forEach(s=>{if(!resultArr(r.id,s.k))todo.push([r,s])})});
+  if(!todo.length){toast("Every past session already has results");return}
+  if(!confirm(`Look up ${todo.length} missing session result${todo.length===1?"":"s"} from the F1 data service? You can check or edit any of them afterward.`))return;
+  let done=0;const failed=[];
+  for(const [r,s] of todo){
+    S.fetchStatus=`Fetching ${done+failed.length+1} of ${todo.length}: ${r.name} ${s.name}…`;setFetchStatus();
+    try{
+      const x=await of1Top5(r,s.k);
+      if(x.error)failed.push(`${r.name} ${s.name} (${x.error.split(".")[0].toLowerCase()})`);
+      else if(!full(x.codes))failed.push(`${r.name} ${s.name} (${x.unknown.join(", ")} not in your driver list)`);
+      else{
+        const cur=clone(S.results[r.id]||{raceId:r.id});cur[s.k]=x.codes;cur.updated=Date.now();
+        if(await write("results/"+r.id,cur)){S.results[r.id]=cur;done++}else failed.push(`${r.name} ${s.name} (couldn’t save)`);
+      }
+    }catch(e){failed.push(`${r.name} ${s.name} (couldn’t reach the data service)`)}
+    await sleep(350);
+  }
+  S.fetchStatus=`Added ${done} session result${done===1?"":"s"}.`+(failed.length?` Couldn’t fill ${failed.length}: ${failed.join("; ")}.`:"");
+  render();setFetchStatus();
+}
+function setFetchStatus(){const el=document.getElementById("fetchstatus");if(el)el.textContent=S.fetchStatus||""}
 function markDirty(){if(!S.setupDirty){S.setupDirty=true;const sp=document.querySelector(".savebar span");if(sp)sp.textContent="Unsaved changes"}}
 
 /* ---------- boot ---------- */
