@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vroom Vroom of Villainy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;1,700;1,800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F1F2F4; --surface:#FFFFFF; --ink:#15171C; --muted:#5D6470; --line:#D8DBE1; --soft:#ECEEF1;
+  --red:#D3121A; --on-red:#FFFFFF;
+  --exact:#0F7A41; --exact-bg:#D9F2E3; --partial:#8A5D00; --partial-bg:#FBEDC4;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1014; --surface:#171A20; --ink:#ECEEF2; --muted:#9BA2AE; --line:#2A2F38; --soft:#1F232A;
+    --red:#FF3A40; --on-red:#14060A;
+    --exact:#4BE08F; --exact-bg:#123222; --partial:#F3C54F; --partial-bg:#3A2E0E;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1014; --surface:#171A20; --ink:#ECEEF2; --muted:#9BA2AE; --line:#2A2F38; --soft:#1F232A;
+  --red:#FF3A40; --on-red:#14060A;
+  --exact:#4BE08F; --exact-bg:#123222; --partial:#F3C54F; --partial-bg:#3A2E0E;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 48px}
+
+/* Header */
+.checker{height:10px;background:
+  repeating-conic-gradient(var(--ink) 0 25%, transparent 0 50%) 0 0/10px 10px;opacity:.9}
+header.top{padding:18px 0 10px;display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px 24px;justify-content:space-between}
+.brand h1{font-family:var(--display);font-style:italic;font-weight:800;font-size:clamp(2.2rem,7vw,3.4rem);line-height:.9;margin:0;letter-spacing:-.01em}
+.brand h1 span{display:inline-block;background:var(--red);color:var(--on-red);padding:0 .18em;margin-right:.08em;transform:skewX(-8deg)}
+.brand p{margin:6px 0 0;color:var(--muted);font-size:.95rem}
+.whoami{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted)}
+.whoami select{min-width:180px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-weight:600;color:var(--ink)}
+
+nav.tabs{display:flex;gap:4px;border-bottom:2px solid var(--ink);margin:8px 0 20px;overflow-x:auto}
+nav.tabs button{background:none;border:0;padding:10px 16px 8px;font-family:var(--display);font-weight:700;font-size:1.25rem;color:var(--muted);border-radius:6px 6px 0 0;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+
+.note{font-size:.85rem;color:var(--muted);margin:0 0 16px}
+.linkbtn{background:none;border:0;padding:4px 0;color:var(--red);font-weight:600;text-decoration:underline;font-size:inherit}
+textarea{width:100%;min-height:140px;padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font:.85rem/1.4 ui-monospace,Menlo,Consolas,monospace}
+
+/* Race navigator */
+.racebar{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.racebar select{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-family:var(--display);font-weight:700;font-size:1.3rem}
+.iconbtn{width:44px;height:44px;flex:none;border:1px solid var(--line);background:var(--surface);border-radius:6px;font-size:1.2rem}
+.iconbtn:disabled{opacity:.35;cursor:default}
+.racemeta{color:var(--muted);font-size:.9rem;margin:0 0 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--ink)}
+.tag.sprint{background:var(--red);color:var(--on-red)}
+
+.sessions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.sessions button{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:999px;font-weight:600;font-size:.92rem;display:flex;align-items:center;gap:6px}
+.sessions button[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dot.done{background:var(--exact)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+.panel h2{font-family:var(--display);font-weight:700;font-size:1.6rem;margin:0;line-height:1.1}
+.panelhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.status{color:var(--muted);font-size:.9rem;margin-top:2px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);padding:9px 14px;border-radius:6px;font-weight:600;font-size:.92rem}
+.btn.primary{background:var(--red);border-color:var(--red);color:var(--on-red)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.ghost{background:transparent}
+
+/* Picks grid */
+.gridscroll{overflow-x:auto;margin:0 -4px;padding:0 4px}
+table.picks{border-collapse:separate;border-spacing:0;width:100%;min-width:420px}
+table.picks th{font-family:var(--display);font-weight:700;font-size:1.05rem;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.picks th.res{color:var(--red)}
+table.picks td{padding:5px 6px;border-bottom:1px solid var(--soft)}
+table.picks td.pos{font-family:var(--display);font-style:italic;font-weight:800;font-size:1.15rem;color:var(--muted);width:44px}
+table.picks tr.total td{border-bottom:0;padding-top:10px;font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 8px 3px 0;border-radius:4px;font-weight:600;font-size:.92rem;white-space:nowrap;min-width:64px}
+.chip i{width:4px;align-self:stretch;border-radius:2px}
+.chip.exact{background:var(--exact-bg);color:var(--exact)}
+.chip.partial{background:var(--partial-bg);color:var(--partial)}
+.chip.miss{opacity:.55}
+.chip.blank{color:var(--muted);font-weight:500;padding-left:8px}
+.pts{font-family:var(--display);font-weight:700;font-size:1.3rem}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.82rem;color:var(--muted);margin-top:12px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+.admin{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+.admin span{font-size:.85rem;color:var(--muted);margin-right:4px}
+.admin .btn{padding:6px 12px}
+
+/* Picker */
+.slots{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:6px}
+.slots li{display:flex;align-items:center;gap:10px;border:1px dashed var(--line);border-radius:6px;padding:6px 8px;min-height:46px}
+.slots li.filled{border-style:solid;background:var(--soft)}
+.slots .p{font-family:var(--display);font-style:italic;font-weight:800;font-size:1.3rem;width:34px;color:var(--muted)}
+.slots .who{flex:1;font-weight:600}
+.slots .who small{color:var(--muted);font-weight:500;margin-left:6px}
+.slots .empty{color:var(--muted);font-weight:400}
+.slots button{border:0;background:none;width:36px;height:36px;border-radius:6px;font-size:1rem;color:var(--muted)}
+.slots button:hover{background:var(--line)}
+.drivers{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin-bottom:16px}
+.drv{display:flex;align-items:center;gap:8px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:7px 8px;min-height:44px}
+.drv i{width:4px;height:26px;border-radius:2px;flex:none}
+.drv b{font-family:var(--display);font-size:1.1rem;width:38px}
+.drv span{font-size:.82rem;color:var(--muted);line-height:1.2}
+.drv:disabled{opacity:.3;cursor:default}
+
+/* Standings */
+.tower{display:grid;gap:6px;margin-bottom:28px}
+.row{display:grid;grid-template-columns:52px 6px 1fr auto auto;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px 10px 0;overflow:hidden}
+.row .posn{font-family:var(--display);font-style:italic;font-weight:800;font-size:1.9rem;text-align:center;line-height:1}
+.row.lead .posn{color:var(--red)}
+.row .bar{height:34px;border-radius:3px}
+.row .nm{font-family:var(--display);font-weight:700;font-size:1.45rem;line-height:1.05;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .nm small{display:block;font-family:var(--body);font-weight:500;font-size:.8rem;color:var(--muted)}
+.row .gap{color:var(--muted);font-size:.9rem;text-align:right;min-width:56px}
+.row .tot{font-family:var(--display);font-weight:800;font-size:2rem;min-width:56px;text-align:right}
+h3.sec{font-family:var(--display);font-weight:700;font-size:1.35rem;margin:0 0 10px}
+table.break{border-collapse:collapse;font-size:.88rem;min-width:100%}
+table.break th,table.break td{padding:6px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.break th:first-child,table.break td:first-child{text-align:left;position:sticky;left:0;background:var(--bg)}
+table.break thead th{font-weight:600;color:var(--muted)}
+table.break td.best{color:var(--exact);font-weight:700}
+
+/* Setup */
+.setup section{margin-bottom:28px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted)}
+.field input,.lrow input,.lrow select{padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font-size:.95rem;min-width:0}
+.lrow{display:grid;gap:6px;align-items:center;margin-bottom:6px}
+.lrow.players{grid-template-columns:1fr 40px}
+.lrow.races{grid-template-columns:1fr 150px auto 40px}
+.lrow.drivers{grid-template-columns:70px 1fr 1fr 40px}
+.lrow label.chk{display:flex;align-items:center;gap:6px;font-size:.85rem;color:var(--muted)}
+.rm{border:1px solid var(--line);background:var(--surface);border-radius:6px;height:38px;color:var(--muted)}
+.cols2{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:10px}
+.savebar{position:sticky;bottom:0;padding:12px 0 calc(12px + env(safe-area-inset-bottom,0px));background:var(--bg);display:flex;gap:10px;align-items:center;border-top:1px solid var(--line)}
+.savebar span{color:var(--muted);font-size:.88rem}
+.hint{font-size:.85rem;color:var(--muted);margin:-4px 0 10px}
+
+.start{max-width:520px}
+.start h2{font-family:var(--display);font-weight:700;font-size:2rem;margin:0 0 6px}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:.92rem;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+.loading{padding:60px 0;text-align:center;color:var(--muted)}
+
+@media (max-width:560px){
+  .lrow.races{grid-template-columns:1fr 40px;}
+  .lrow.races input[type=date]{grid-column:1}
+  .lrow.races label.chk{grid-column:1}
+  .lrow.races .rm{grid-row:1;grid-column:2}
+  .lrow.drivers{grid-template-columns:60px 1fr 40px}
+  .lrow.drivers input:nth-child(3){grid-column:1/3}
+  .row{grid-template-columns:42px 5px 1fr auto;gap:10px}
+  .row .gap{display:none}
+}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="checker" aria-hidden="true"></div>
+<div class="wrap" id="app"><div class="loading">Warming up the tyres…</div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+/* ===== PASTE YOUR FIREBASE CONFIG HERE (see README) ===== */
+const FIREBASE_CONFIG = {
+  apiKey: "",
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: ""
+};
+/* ======================================================== */
+</script>
+<script>
+(function(){
+"use strict";
+
+const SESSIONS=[
+  {k:"sq",name:"Sprint qualifying",sprint:true},
+  {k:"s",name:"Sprint",sprint:true},
+  {k:"q",name:"Qualifying"},
+  {k:"r",name:"Grand Prix"}
+];
+const TEAM_COLORS={"McLaren":"#FF8000","Ferrari":"#E8002D","Red Bull":"#3671C6","Mercedes":"#00B3A6","Aston Martin":"#229971","Alpine":"#FF87BC","Williams":"#3FA9F5","Racing Bulls":"#6692FF","Audi":"#9AA0A6","Haas":"#B6BABD","Cadillac":"#C9A227"};
+const PLAYER_COLORS=["#D3121A","#2F6FDE","#E39B0B","#14A06B","#8A3FD1","#E05FA5","#0EA5B7","#6B7280"];
+
+const DEFAULT_DRIVERS=[
+  ["NOR","Lando Norris","McLaren"],["PIA","Oscar Piastri","McLaren"],
+  ["LEC","Charles Leclerc","Ferrari"],["HAM","Lewis Hamilton","Ferrari"],
+  ["VER","Max Verstappen","Red Bull"],["HAD","Isack Hadjar","Red Bull"],
+  ["RUS","George Russell","Mercedes"],["ANT","Kimi Antonelli","Mercedes"],
+  ["ALO","Fernando Alonso","Aston Martin"],["STR","Lance Stroll","Aston Martin"],
+  ["GAS","Pierre Gasly","Alpine"],["COL","Franco Colapinto","Alpine"],
+  ["ALB","Alexander Albon","Williams"],["SAI","Carlos Sainz","Williams"],
+  ["LAW","Liam Lawson","Racing Bulls"],["LIN","Arvid Lindblad","Racing Bulls"],
+  ["HUL","Nico Hülkenberg","Audi"],["BOR","Gabriel Bortoleto","Audi"],
+  ["OCO","Esteban Ocon","Haas"],["BEA","Oliver Bearman","Haas"],
+  ["PER","Sergio Pérez","Cadillac"],["BOT","Valtteri Bottas","Cadillac"]
+].map(([c,n,t])=>({c,n,t}));
+
+const DEFAULT_RACES=[
+  ["aus","Australia","2026-03-08",0],["chn","China","2026-03-15",1],["jpn","Japan","2026-03-29",0],
+  ["mia","Miami","2026-05-03",1],["can","Canada","2026-05-24",1],["mon","Monaco","2026-06-07",0],
+  ["bcn","Barcelona-Catalunya","2026-06-14",0],["aut","Austria","2026-06-28",0],["gbr","Great Britain","2026-07-05",1],
+  ["bel","Belgium","2026-07-19",0],["hun","Hungary","2026-07-26",0],["ned","Netherlands","2026-08-23",1],
+  ["ita","Italy","2026-09-06",0],["mad","Spain (Madrid)","2026-09-13",0],["aze","Azerbaijan","2026-09-26",0],["bhr","Bahrain (in Malaysia)","2026-10-04",0],
+  ["sgp","Singapore","2026-10-11",1],["usa","United States","2026-10-25",0],["mex","Mexico City","2026-11-01",0],
+  ["bra","São Paulo","2026-11-08",0],["lvg","Las Vegas","2026-11-21",0],["qat","Qatar","2026-11-29",0],
+  ["abu","Abu Dhabi","2026-12-06",0]
+].map(([id,name,date,s])=>({id:"2026-"+id,name,date,sprint:!!s}));
+
+const LS_KEY="vvv-local-v1", ME_KEY="vvv-me", ADMIN_KEY="vvv-admin";
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+
+const S={mode:"loading",league:null,picks:{},results:{},canWrite:true,me:lsGet(ME_KEY),
+  tab:"weekend",raceId:null,session:null,editing:null,draft:[],setupDraft:null,setupDirty:false,newPlayers:["","","",""],newSeason:"2026"};
+let db=null;
+
+const app=document.getElementById("app");
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=p=>p+Math.random().toString(36).slice(2,9);
+const clone=o=>JSON.parse(JSON.stringify(o));
+
+let toastT;
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),2200)}
+
+/* ---------- storage ---------- */
+function saveLocal(){lsSet(LS_KEY,JSON.stringify({league:S.league,picks:S.picks,results:S.results}))}
+function loadLocal(){const raw=lsGet(LS_KEY);if(!raw)return;try{const o=JSON.parse(raw);S.league=o.league||null;S.picks=o.picks||{};S.results=o.results||{}}catch(e){}}
+async function write(path,data){
+  if(db){
+    try{await db.doc(path).set(data);return true}
+    catch(e){
+      if(e&&e.code==="permission-denied")toast("The database refused the save. Check your Firestore rules");
+      else toast("Couldn’t save. Check your connection and try again");
+      return false;
+    }
+  }
+  const [col,id]=path.split("/");
+  if(col==="league")S.league=data;else if(col==="picks")S.picks[id]=data;else if(col==="results")S.results[id]=data;
+  saveLocal();render();return true;
+}
+
+/* ---------- helpers ---------- */
+const L=()=>S.league;
+const races=()=>(L().races||[]).slice().sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+const raceById=id=>races().find(r=>r.id===id);
+const sessionsFor=r=>SESSIONS.filter(s=>!s.sprint||r.sprint);
+const driver=c=>(L().drivers||[]).find(d=>d.c===c)||{c,n:c,t:""};
+const teamColor=t=>TEAM_COLORS[t]||"#8C929C";
+const full=a=>Array.isArray(a)&&a.length===5&&a.every(Boolean);
+const pickKey=(raceId,pid)=>raceId+"__"+pid;
+const resultArr=(raceId,k)=>{const r=S.results[raceId];return r&&full(r[k])?r[k]:null};
+const pickArr=(raceId,pid,k)=>{const p=S.picks[pickKey(raceId,pid)];return p&&Array.isArray(p[k])?p[k]:null};
+function players(){return L().players||[]}
+const admin=()=>S.isAdmin||!L().adminPin;
+function playerColor(pid){const i=players().findIndex(p=>p.id===pid);return PLAYER_COLORS[(i<0?0:i)%PLAYER_COLORS.length]}
+
+function scoreSession(pick,result){
+  const sc=L().scoring||{exact:1,partial:0};
+  const marks=[];let pts=0,exact=0;
+  for(let i=0;i<5;i++){
+    const d=pick&&pick[i];
+    if(!d){marks.push("blank");continue}
+    if(result[i]===d){pts+=Number(sc.exact)||0;exact++;marks.push("exact")}
+    else if(result.includes(d)){pts+=Number(sc.partial)||0;marks.push("partial")}
+    else marks.push("miss");
+  }
+  return {pts,exact,marks};
+}
+function raceScore(race,pid){
+  let pts=0,exact=0,scored=false;
+  for(const s of sessionsFor(race)){
+    const res=resultArr(race.id,s.k);if(!res)continue;scored=true;
+    const r=scoreSession(pickArr(race.id,pid,s.k),res);pts+=r.pts;exact+=r.exact;
+  }
+  return {pts,exact,scored};
+}
+function raceHasAnyResult(race){return sessionsFor(race).some(s=>resultArr(race.id,s.k))}
+function defaultRace(){
+  const rs=races();
+  const open=rs.find(r=>!resultArr(r.id,"r"));
+  return (open||rs[rs.length-1]||{}).id;
+}
+function defaultSession(race){
+  const ss=sessionsFor(race);
+  return (ss.find(s=>!resultArr(race.id,s.k))||ss[ss.length-1]).k;
+}
+function fmtDate(d){if(!d)return"";const x=new Date(d+"T12:00:00");return isNaN(x)?d:x.toLocaleDateString(undefined,{month:"short",day:"numeric"})}
+
+/* ---------- render ---------- */
+function render(){
+  if(S.mode==="loading")return;
+  const ae=document.activeElement;
+  if(S.tab==="setup"&&ae&&ae.closest&&ae.closest("#setup")&&ae.tagName!=="BUTTON")return; // don't clobber typing
+  if(!L()){app.innerHTML=renderStart();return}
+  if(!S.me||!players().some(p=>p.id===S.me))S.me=S.me&&players().some(p=>p.id===S.me)?S.me:"";
+  if(!S.raceId||!raceById(S.raceId))S.raceId=defaultRace();
+  const race=raceById(S.raceId);
+  if(race&&(!S.session||!sessionsFor(race).some(s=>s.k===S.session)))S.session=defaultSession(race);
+
+  const modeNote=S.mode==="shared"
+    ?"Shared league: everyone with this link sees the same picks and results."
+    :"Not connected to a database yet, so everything saves on this device only. Add your Firebase config to share it.";
+
+  app.innerHTML=`
+  <header class="top">
+    <div class="brand"><h1><span>Vroom Vroom</span> of Villainy</h1><p>${esc(L().season||"")} season predictions</p></div>
+    <label class="whoami">Picking as
+      <select data-act="me">
+        <option value="">Just watching</option>
+        ${players().map(p=>`<option value="${esc(p.id)}" ${p.id===S.me?"selected":""}>${esc(p.name)}</option>`).join("")}
+      </select>
+    </label>
+  </header>
+  ${L().adminPin?`<p class="note" style="margin:-4px 0 8px;text-align:right">${S.isAdmin?`Admin mode on. <button class="linkbtn" data-act="admin-off">Turn off</button>`:`<button class="linkbtn" data-act="admin-on">Admin login</button>`}</p>`:""}
+  <nav class="tabs" role="tablist">
+    ${[["weekend","Race weekend"],["standings","Standings"],["setup","League setup"]].map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}
+  </nav>
+  <p class="note">${esc(modeNote)}</p>
+  ${S.tab==="weekend"?renderWeekend(race):S.tab==="standings"?renderStandings():renderSetup()}`;
+}
+
+function renderStart(){
+  const can=S.canWrite;
+  if(!can)return `<div class="start"><h2>No league yet</h2><p class="note">The league owner hasn’t set things up yet. Check back once they have.</p></div>`;
+  return `<header class="top"><div class="brand"><h1><span>Vroom Vroom</span> of Villainy</h1><p>Predict the top 5. Score every spot you nail.</p></div></header>
+  <div class="start panel" id="start">
+    <h2>Start your league</h2>
+    <p class="note">Add the people playing. You can rename players, tweak scoring, and edit the calendar or driver list later.</p>
+    <div class="cols2"><label class="field">Season name<input data-act="newseason" value="${esc(S.newSeason)}"></label>
+    <label class="field">Admin PIN (optional)<input data-act="newpin" inputmode="numeric" value="${esc(S.newPin||"")}" placeholder="e.g. 4417"></label></div>
+    <p class="hint">The PIN keeps league setup and fixing other people’s picks to you. It’s a friendly lock, not real security.</p>
+    ${S.newPlayers.map((n,i)=>`<div class="lrow players"><input data-act="newplayer" data-i="${i}" placeholder="Player ${i+1}" value="${esc(n)}" aria-label="Player ${i+1} name"><button class="rm" data-act="newplayer-rm" data-i="${i}" aria-label="Remove player" ${S.newPlayers.length<=2?"disabled":""}>✕</button></div>`).join("")}
+    <div class="actions" style="margin-top:12px">
+      <button class="btn" data-act="newplayer-add" ${S.newPlayers.length>=8?"disabled":""}>Add player</button>
+      <button class="btn primary" data-act="create">Create league</button>
+    </div>
+  </div>`;
+}
+
+function chip(code,mark){
+  if(!code)return `<span class="chip blank">—</span>`;
+  const d=driver(code);
+  return `<span class="chip ${mark||""}" title="${esc(d.n)}"><i style="background:${teamColor(d.t)}"></i>${esc(d.c)}</span>`;
+}
+
+function renderWeekend(race){
+  if(!race)return `<div class="panel"><p>No races on the calendar. Add some under League setup.</p></div>`;
+  const rs=races();const idx=rs.findIndex(r=>r.id===race.id);
+  const ss=sessionsFor(race);const sess=ss.find(s=>s.k===S.session);
+  return `
+  <div class="racebar">
+    <button class="iconbtn" data-act="race-step" data-v="-1" aria-label="Previous race" ${idx<=0?"disabled":""}>‹</button>
+    <select data-act="race" aria-label="Choose race">${rs.map((r,i)=>`<option value="${esc(r.id)}" ${r.id===race.id?"selected":""}>Round ${i+1}: ${esc(r.name)}</option>`).join("")}</select>
+    <button class="iconbtn" data-act="race-step" data-v="1" aria-label="Next race" ${idx>=rs.length-1?"disabled":""}>›</button>
+  </div>
+  <p class="racemeta">Race day ${esc(fmtDate(race.date))} ${race.sprint?`<span class="tag sprint">Sprint weekend</span>`:""}</p>
+  <div class="sessions">${ss.map(s=>`<button aria-pressed="${s.k===S.session}" data-act="session" data-v="${s.k}"><span class="dot ${resultArr(race.id,s.k)?"done":""}"></span>${s.name}</button>`).join("")}</div>
+  ${S.editing&&S.editing.raceId===race.id&&S.editing.k===sess.k?renderPicker(race,sess):renderSession(race,sess)}`;
+}
+
+function renderSession(race,sess){
+  const res=resultArr(race.id,sess.k);
+  const me=players().find(p=>p.id===S.me);
+  const myPick=me?pickArr(race.id,me.id,sess.k):null;
+  let status=res?"Results are in. Points scored.":"Open for picks. Others’ picks stay hidden until results are entered.";
+  const btns=[];
+  if(S.canWrite&&me&&!res)btns.push(`<button class="btn primary" data-act="edit-pick">${full(myPick)?"Change my picks":"Make my picks"}</button>`);
+  if(S.canWrite)btns.push(`<button class="btn" data-act="edit-result">${res?"Edit results":"Enter results"}</button>`);
+  if(!me&&!res&&S.canWrite)status+=" Choose who you are at the top to make picks.";
+
+  const ps=players();
+  const scores=ps.map(p=>res?scoreSession(pickArr(race.id,p.id,sess.k),res):null);
+  const rows=[0,1,2,3,4].map(i=>`<tr><td class="pos">P${i+1}</td>
+    <td>${res?chip(res[i]):`<span class="chip blank">—</span>`}</td>
+    ${ps.map((p,j)=>{
+      const pk=pickArr(race.id,p.id,sess.k);
+      const visible=res||p.id===S.me;
+      if(!visible){return `<td>${i===0?`<span class="chip blank">${full(pk)?"Locked in ✓":"No picks yet"}</span>`:""}</td>`}
+      return `<td>${chip(pk&&pk[i],res?scores[j].marks[i]:"")}</td>`;
+    }).join("")}</tr>`).join("");
+  const total=res?`<tr class="total"><td></td><td style="color:var(--muted);font-size:.85rem">Points</td>${scores.map(s=>`<td class="pts">${s.pts}</td>`).join("")}</tr>`:"";
+  const sc=L().scoring||{};
+  return `<div class="panel">
+    <div class="panelhead"><div><h2>${esc(sess.name)}</h2><div class="status">${status}</div></div><div class="actions">${btns.join("")}</div></div>
+    <div class="gridscroll"><table class="picks">
+      <thead><tr><th></th><th class="res">Result</th>${ps.map(p=>`<th><span class="sw" style="background:${playerColor(p.id)};margin-right:6px"></span>${esc(p.name)}</th>`).join("")}</tr></thead>
+      <tbody>${rows}${total}</tbody></table></div>
+    <div class="legend"><span><i class="sw" style="background:var(--exact)"></i>Exact spot: ${Number(sc.exact)||0} pt${Number(sc.exact)===1?"":"s"}</span>
+    ${Number(sc.partial)?`<span><i class="sw" style="background:var(--partial)"></i>In top 5, wrong spot: ${Number(sc.partial)} pt${Number(sc.partial)===1?"":"s"}</span>`:""}</div>
+    ${admin()&&S.canWrite?`<div class="admin"><span>Admin: enter or fix picks for</span>${ps.map(p=>`<button class="btn" data-act="edit-pick" data-pid="${esc(p.id)}">${esc(p.name)}</button>`).join("")}</div>`:""}
+  </div>`;
+}
+
+function renderPicker(race,sess){
+  const isResult=S.editing.type==="result";
+  const me=players().find(p=>p.id===S.editing.pid);
+  const title=isResult?`Official ${sess.name.toLowerCase()} top 5`:`${me?esc(me.name)+"’s":"Your"} ${sess.name.toLowerCase()} top 5`;
+  const chosen=new Set(S.draft.filter(Boolean));
+  const firstEmpty=S.draft.findIndex(x=>!x);
+  const teams=[];(L().drivers||[]).forEach(d=>{if(!teams.includes(d.t))teams.push(d.t)});
+  const ordered=teams.flatMap(t=>(L().drivers||[]).filter(d=>d.t===t));
+  return `<div class="panel">
+    <div class="panelhead"><div><h2>${title}</h2><div class="status">Tap drivers in finishing order. Tap ✕ to clear a spot.</div></div></div>
+    <ol class="slots">${[0,1,2,3,4].map(i=>{const c=S.draft[i];const d=c?driver(c):null;
+      return `<li class="${c?"filled":""}"><span class="p">P${i+1}</span>
+        <span class="who">${d?`${esc(d.n)}<small>${esc(d.t)}</small>`:`<span class="empty">${i===firstEmpty?"Next pick goes here":"Empty"}</span>`}</span>
+        ${c?`${i>0?`<button data-act="slot-up" data-i="${i}" aria-label="Move up">↑</button>`:""}<button data-act="slot-clear" data-i="${i}" aria-label="Clear P${i+1}">✕</button>`:""}</li>`}).join("")}</ol>
+    <div class="drivers">${ordered.map(d=>`<button class="drv" data-act="pick-driver" data-v="${esc(d.c)}" ${chosen.has(d.c)||firstEmpty<0?"disabled":""}><i style="background:${teamColor(d.t)}"></i><b>${esc(d.c)}</b><span>${esc(d.n)}</span></button>`).join("")}</div>
+    <div class="actions">
+      <button class="btn primary" data-act="save-edit" ${full(S.draft)?"":"disabled"}>${isResult?"Save results":"Save picks"}</button>
+      <button class="btn ghost" data-act="cancel-edit">Cancel</button>
+      ${isResult&&resultArr(race.id,sess.k)?`<button class="btn ghost" data-act="clear-result">Remove results</button>`:""}
+    </div>
+  </div>`;
+}
+
+function renderStandings(){
+  const ps=players();const rs=races();
+  const scored=rs.filter(raceHasAnyResult);
+  const rows=ps.map(p=>{let tot=0,ex=0;const per={};
+    scored.forEach(r=>{const s=raceScore(r,p.id);per[r.id]=s.pts;tot+=s.pts;ex+=s.exact});
+    return {p,tot,ex,per,last:scored.length?per[scored[scored.length-1].id]:0};
+  }).sort((a,b)=>b.tot-a.tot||b.ex-a.ex);
+  const lead=rows[0]?rows[0].tot:0;
+  let pos=0,prev=null;
+  const tower=rows.map((r,i)=>{if(prev===null||r.tot!==prev.tot||r.ex!==prev.ex)pos=i+1;prev=r;
+    return `<div class="row ${pos===1&&r.tot>0?"lead":""}"><div class="posn">${pos}</div><div class="bar" style="background:${playerColor(r.p.id)}"></div>
+      <div class="nm">${esc(r.p.name)}<small>${r.ex} exact hit${r.ex===1?"":"s"}${scored.length?`, last weekend +${r.last}`:""}</small></div>
+      <div class="gap">${i===0?(r.tot>0?"Leader":""):(lead-r.tot?"−"+(lead-r.tot):"Tied")}</div>
+      <div class="tot">${r.tot}</div></div>`}).join("");
+  const breakdown=scored.length?`<h3 class="sec">Weekend by weekend</h3>
+    <div class="gridscroll"><table class="break"><thead><tr><th>Race</th>${rows.map(r=>`<th>${esc(r.p.name)}</th>`).join("")}</tr></thead>
+    <tbody>${scored.slice().reverse().map(race=>{const vals=rows.map(r=>r.per[race.id]);const mx=Math.max(...vals);
+      return `<tr><td>${esc(race.name)}${race.sprint?" (S)":""}</td>${vals.map(v=>`<td class="${v===mx&&mx>0?"best":""}">${v}</td>`).join("")}</tr>`}).join("")}</tbody></table></div>`
+    :`<p class="note">No results yet. Points appear here once the first session’s results are entered.</p>`;
+  return `<div class="tower">${tower}</div>${breakdown}`;
+}
+
+function renderSetup(){
+  if(!S.setupDraft){S.setupDraft=clone(L());S.setupDirty=false}
+  const d=S.setupDraft;const dis=S.canWrite&&admin()?"":"disabled";
+  const teamOpts=t=>Object.keys(TEAM_COLORS).concat(Object.keys(TEAM_COLORS).includes(t)||!t?[]:[t]).map(x=>`<option ${x===t?"selected":""}>${esc(x)}</option>`).join("");
+  return `<div class="setup" id="setup">
+    <section>
+      <h3 class="sec">League</h3>
+      <div class="cols2">
+        <label class="field">Season name<input data-set="season" value="${esc(d.season||"")}" ${dis}></label>
+        <label class="field">Admin PIN<input data-set="adminPin" value="${esc(d.adminPin||"")}" placeholder="None" ${dis}></label>
+        <label class="field">Points per exact spot<input type="number" min="0" step="1" data-set="exact" value="${esc(d.scoring.exact)}" ${dis}></label>
+        <label class="field">Points for right driver, wrong spot<input type="number" min="0" step="1" data-set="partial" value="${esc(d.scoring.partial)}" ${dis}></label>
+      </div>
+      <p class="hint">Set the second one to 0 to only reward exact spots. Changes rescore the whole season.</p>
+    </section>
+    <section>
+      <h3 class="sec">Players</h3>
+      ${d.players.map((p,i)=>`<div class="lrow players"><input data-list="players" data-i="${i}" data-f="name" value="${esc(p.name)}" aria-label="Player name" ${dis}><button class="rm" data-act="list-rm" data-list="players" data-i="${i}" aria-label="Remove ${esc(p.name)}" ${dis}>✕</button></div>`).join("")}
+      <button class="btn" data-act="list-add" data-list="players" ${dis||d.players.length>=8?"disabled":""}>Add player</button>
+    </section>
+    <section>
+      <h3 class="sec">Calendar</h3>
+      <p class="hint">Tick “Sprint” to add sprint qualifying and sprint sessions to that weekend.</p>
+      ${d.races.map((r,i)=>`<div class="lrow races"><input data-list="races" data-i="${i}" data-f="name" value="${esc(r.name)}" aria-label="Race name" ${dis}><input type="date" data-list="races" data-i="${i}" data-f="date" value="${esc(r.date)}" aria-label="Race date" ${dis}><label class="chk"><input type="checkbox" data-list="races" data-i="${i}" data-f="sprint" ${r.sprint?"checked":""} ${dis}>Sprint</label><button class="rm" data-act="list-rm" data-list="races" data-i="${i}" aria-label="Remove ${esc(r.name)}" ${dis}>✕</button></div>`).join("")}
+      <button class="btn" data-act="list-add" data-list="races" ${dis}>Add race</button>
+    </section>
+    <section>
+      <h3 class="sec">Drivers</h3>
+      <p class="hint">Use a short code (like VER). Changing a code won’t update picks already made with the old one.</p>
+      ${d.drivers.map((x,i)=>`<div class="lrow drivers"><input data-list="drivers" data-i="${i}" data-f="c" value="${esc(x.c)}" maxlength="4" aria-label="Code" ${dis}><input data-list="drivers" data-i="${i}" data-f="n" value="${esc(x.n)}" aria-label="Driver name" ${dis}><select data-list="drivers" data-i="${i}" data-f="t" aria-label="Team" ${dis}>${teamOpts(x.t)}</select><button class="rm" data-act="list-rm" data-list="drivers" data-i="${i}" aria-label="Remove ${esc(x.n)}" ${dis}>✕</button></div>`).join("")}
+      <button class="btn" data-act="list-add" data-list="drivers" ${dis}>Add driver</button>
+    </section>
+    ${admin()?`<section>
+      <h3 class="sec">Import past weekends</h3>
+      <p class="hint">Paste the import text Claude made from your chat history, then load it. It adds picks and results and overwrites any matching sessions.</p>
+      <textarea id="importbox" spellcheck="false" placeholder='{"results":{"aus":{"q":["RUS","ANT","LEC","HAM","NOR"]}},"picks":{"aus":{"Mike":{"q":["NOR","PIA","VER","LEC","RUS"]}}}}'></textarea>
+      <div class="actions" style="margin-top:8px"><button class="btn" data-act="import">Load into league</button></div>
+    </section>`:`<p class="note">Setup is locked to the league admin.</p>`}
+    ${S.canWrite&&admin()?`<div class="savebar"><button class="btn primary" data-act="setup-save">Save changes</button><button class="btn ghost" data-act="setup-reset">Discard</button><span>${S.setupDirty?"Unsaved changes":"All saved"}</span></div>`:""}
+  </div>`;
+}
+
+/* ---------- events ---------- */
+app.addEventListener("click",async e=>{
+  const b=e.target.closest("[data-act]");if(!b||b.disabled)return;
+  const a=b.dataset.act;const race=S.league?raceById(S.raceId):null;
+  switch(a){
+    case "tab": if(S.tab==="setup"&&S.setupDirty&&b.dataset.v!=="setup"&&!confirm("Leave without saving your setup changes?"))return;
+      if(b.dataset.v!=="setup")S.setupDraft=null;
+      S.tab=b.dataset.v;S.editing=null;render();break;
+    case "race-step":{const rs=races();const i=rs.findIndex(r=>r.id===S.raceId)+Number(b.dataset.v);if(rs[i]){S.raceId=rs[i].id;S.session=defaultSession(rs[i]);S.editing=null;render()}break}
+    case "session": S.session=b.dataset.v;S.editing=null;render();break;
+    case "edit-pick":{const pid=b.dataset.pid||S.me;const p=pickArr(race.id,pid,S.session);S.draft=p?p.slice(0,5):[];while(S.draft.length<5)S.draft.push(null);S.editing={type:"pick",raceId:race.id,k:S.session,pid};render();break}
+    case "edit-result":{const r=S.results[race.id];const arr=r&&Array.isArray(r[S.session])?r[S.session]:[];S.draft=arr.slice(0,5);while(S.draft.length<5)S.draft.push(null);S.editing={type:"result",raceId:race.id,k:S.session};render();break}
+    case "pick-driver":{const i=S.draft.findIndex(x=>!x);if(i>=0){S.draft[i]=b.dataset.v;render()}break}
+    case "slot-clear": S.draft[+b.dataset.i]=null;render();break;
+    case "slot-up":{const i=+b.dataset.i;[S.draft[i-1],S.draft[i]]=[S.draft[i],S.draft[i-1]];render();break}
+    case "cancel-edit": S.editing=null;render();break;
+    case "save-edit":{
+      const ed=S.editing;if(!full(S.draft))return;
+      if(ed.type==="pick"){
+        if(resultArr(ed.raceId,ed.k)&&!admin()){toast("Results are already in for this session");S.editing=null;render();return}
+        const key=pickKey(ed.raceId,ed.pid);const cur=clone(S.picks[key]||{raceId:ed.raceId,playerId:ed.pid});
+        cur[ed.k]=S.draft.slice();cur.updated=Date.now();
+        if(await write("picks/"+key,cur)){toast("Picks saved");S.editing=null;render()}
+      }else{
+        const cur=clone(S.results[ed.raceId]||{raceId:ed.raceId});cur[ed.k]=S.draft.slice();cur.updated=Date.now();
+        if(await write("results/"+ed.raceId,cur)){toast("Results saved. Points updated");S.editing=null;render()}
+      }
+      break}
+    case "clear-result":{if(!confirm("Remove these results? Points for this session will be cleared and picks reopen."))return;
+      const cur=clone(S.results[race.id]||{raceId:race.id});delete cur[S.session];cur.updated=Date.now();
+      if(await write("results/"+race.id,cur)){toast("Results removed");S.editing=null;render()}break}
+    case "admin-on":{const pin=prompt("Admin PIN");if(pin==null)return;
+      if(pin.trim()===String(L().adminPin)){S.isAdmin=true;lsSet(ADMIN_KEY,"1");toast("Admin mode on")}else toast("That PIN doesn’t match");render();break}
+    case "admin-off": S.isAdmin=false;lsSet(ADMIN_KEY,"0");S.setupDraft=null;render();break;
+    case "import": await runImport();break;
+    case "newplayer-add": S.newPlayers.push("");render();break;
+    case "newplayer-rm": S.newPlayers.splice(+b.dataset.i,1);render();break;
+    case "create":{
+      const names=S.newPlayers.map(s=>s.trim()).filter(Boolean);
+      if(names.length<2){toast("Add at least two players");return}
+      const league={season:S.newSeason.trim()||"2026",adminPin:(S.newPin||"").trim(),players:names.map(n=>({id:uid("p"),name:n})),scoring:{exact:1,partial:0},drivers:clone(DEFAULT_DRIVERS),races:clone(DEFAULT_RACES)};
+      if(league.adminPin){S.isAdmin=true;lsSet(ADMIN_KEY,"1")}
+      if(await write("league/main",league)){toast("League created");render()}
+      break}
+    case "list-add":{const d=S.setupDraft;const l=b.dataset.list;
+      if(l==="players")d.players.push({id:uid("p"),name:"New player"});
+      if(l==="races")d.races.push({id:uid("r"),name:"New race",date:"",sprint:false});
+      if(l==="drivers")d.drivers.push({c:"NEW",n:"New driver",t:"McLaren"});
+      S.setupDirty=true;b.blur();render();break}
+    case "list-rm":{const d=S.setupDraft;const l=b.dataset.list;const i=+b.dataset.i;
+      if(l==="players"&&!confirm(`Remove ${d.players[i].name}? Their points will no longer show.`))return;
+      d[l].splice(i,1);S.setupDirty=true;b.blur();render();break}
+    case "setup-reset": S.setupDraft=null;b.blur();render();break;
+    case "setup-save":{
+      const d=clone(S.setupDraft);
+      d.players=d.players.filter(p=>p.name.trim()).map(p=>({id:p.id,name:p.name.trim()}));
+      d.drivers=d.drivers.filter(x=>x.c.trim()).map(x=>({c:x.c.trim().toUpperCase(),n:x.n.trim()||x.c.trim().toUpperCase(),t:x.t}));
+      const codes=d.drivers.map(x=>x.c);if(new Set(codes).size!==codes.length){toast("Two drivers share the same code");return}
+      d.races=d.races.filter(r=>r.name.trim());
+      d.scoring={exact:Math.max(0,Number(d.scoring.exact)||0),partial:Math.max(0,Number(d.scoring.partial)||0)};
+      b.blur();
+      if(await write("league/main",d)){S.setupDraft=null;toast("League saved");render()}
+      break}
+  }
+});
+app.addEventListener("change",e=>{
+  const t=e.target;
+  if(t.dataset.act==="me"){S.me=t.value;lsSet(ME_KEY,t.value);S.editing=null;render();return}
+  if(t.dataset.act==="race"){S.raceId=t.value;S.session=defaultSession(raceById(t.value));S.editing=null;render();return}
+  if(t.dataset.list&&t.type==="checkbox"){S.setupDraft[t.dataset.list][+t.dataset.i][t.dataset.f]=t.checked;markDirty()}
+  if(t.dataset.list&&t.tagName==="SELECT"){S.setupDraft[t.dataset.list][+t.dataset.i][t.dataset.f]=t.value;markDirty()}
+});
+app.addEventListener("input",e=>{
+  const t=e.target;
+  if(t.dataset.act==="newplayer"){S.newPlayers[+t.dataset.i]=t.value;return}
+  if(t.dataset.act==="newseason"){S.newSeason=t.value;return}
+  if(t.dataset.act==="newpin"){S.newPin=t.value;return}
+  if(!S.setupDraft)return;
+  if(t.dataset.list&&t.type!=="checkbox"&&t.tagName!=="SELECT"){S.setupDraft[t.dataset.list][+t.dataset.i][t.dataset.f]=t.value;markDirty()}
+  else if(t.dataset.set==="season"){S.setupDraft.season=t.value;markDirty()}
+  else if(t.dataset.set==="adminPin"){S.setupDraft.adminPin=t.value.trim();markDirty()}
+  else if(t.dataset.set==="exact"||t.dataset.set==="partial"){S.setupDraft.scoring[t.dataset.set]=t.value;markDirty()}
+});
+async function runImport(){
+  const box=document.getElementById("importbox");let data;
+  try{data=JSON.parse(box.value)}catch(e){toast("That text isn’t valid import data");return}
+  const findRace=k=>{k=String(k).toLowerCase().trim();return races().find(r=>r.id.toLowerCase()===k||r.id.toLowerCase().endsWith("-"+k)||r.name.toLowerCase()===k)};
+  const findPlayer=n=>players().find(p=>p.name.toLowerCase().trim()===String(n).toLowerCase().trim());
+  const codes=new Set((L().drivers||[]).map(d=>d.c));
+  const okArr=a=>Array.isArray(a)&&a.length===5&&a.every(c=>codes.has(String(c).toUpperCase()));
+  const problems=[];const writes=[];
+  const resultsOut={};const picksOut={};
+  for(const [rk,sess] of Object.entries(data.results||{})){
+    const r=findRace(rk);if(!r){problems.push("race "+rk);continue}
+    const cur=resultsOut[r.id]||clone(S.results[r.id]||{raceId:r.id});
+    for(const [k,arr] of Object.entries(sess)){if(!["q","r","sq","s"].includes(k)||!okArr(arr)){problems.push(r.name+" "+k+" result");continue}cur[k]=arr.map(c=>String(c).toUpperCase())}
+    cur.updated=Date.now();resultsOut[r.id]=cur;
+  }
+  for(const [rk,byPlayer] of Object.entries(data.picks||{})){
+    const r=findRace(rk);if(!r){problems.push("race "+rk);continue}
+    for(const [pn,sess] of Object.entries(byPlayer)){
+      const p=findPlayer(pn);if(!p){problems.push("player "+pn);continue}
+      const key=pickKey(r.id,p.id);const cur=picksOut[key]||clone(S.picks[key]||{raceId:r.id,playerId:p.id});
+      for(const [k,arr] of Object.entries(sess)){if(!["q","r","sq","s"].includes(k)||!okArr(arr)){problems.push(r.name+" "+k+" for "+pn);continue}cur[k]=arr.map(c=>String(c).toUpperCase())}
+      cur.updated=Date.now();picksOut[key]=cur;
+    }
+  }
+  for(const [id,v] of Object.entries(resultsOut))writes.push(["results/"+id,v]);
+  for(const [id,v] of Object.entries(picksOut))writes.push(["picks/"+id,v]);
+  if(!writes.length){toast("Nothing to import"+(problems.length?": "+problems.slice(0,3).join(", "):""));return}
+  if(!confirm(`Load ${Object.keys(resultsOut).length} race result sets and ${Object.keys(picksOut).length} player pick sets?`+(problems.length?`\n\nSkipping ${problems.length} item(s) that didn’t match: ${problems.slice(0,6).join(", ")}`:"")))return;
+  if(db){
+    try{for(let i=0;i<writes.length;i+=400){const b=db.batch();writes.slice(i,i+400).forEach(([path,v])=>b.set(db.doc(path),v));await b.commit()}}
+    catch(e){toast("Import failed. Check your connection and Firestore rules");return}
+  }else{
+    writes.forEach(([path,v])=>{const [c,id]=path.split("/");(c==="picks"?S.picks:S.results)[id]=v});saveLocal();
+  }
+  box.value="";toast("Imported. Standings updated");render();
+}
+function markDirty(){if(!S.setupDirty){S.setupDirty=true;const sp=document.querySelector(".savebar span");if(sp)sp.textContent="Unsaved changes"}}
+
+/* ---------- boot ---------- */
+async function init(){
+  S.isAdmin=lsGet(ADMIN_KEY)==="1";
+  let ok=false;
+  try{
+    if(window.firebase&&FIREBASE_CONFIG.apiKey&&FIREBASE_CONFIG.projectId){
+      firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();ok=true;
+    }
+  }catch(e){ok=false;db=null}
+  if(ok){
+    const got={l:false,p:false,r:false};
+    const ready=()=>{if(got.l&&got.p&&got.r){S.mode="shared";render()}};
+    const onErr=e=>{if(e&&e.code==="permission-denied")toast("The database refused access. Check your Firestore rules");else toast("Lost connection to the league. Reload to reconnect")};
+    db.doc("league/main").onSnapshot(s=>{S.league=s.exists?s.data():null;got.l=true;ready()},onErr);
+    db.collection("picks").onSnapshot(s=>{const o={};s.docs.forEach(d=>{o[d.id]=d.data()});S.picks=o;got.p=true;ready()},onErr);
+    db.collection("results").onSnapshot(s=>{const o={};s.docs.forEach(d=>{o[d.id]=d.data()});S.results=o;got.r=true;ready()},onErr);
+  }else{
+    loadLocal();S.mode="local";render();
+  }
+}
+init();
+})();
+</script>
+</body>
+</html>
