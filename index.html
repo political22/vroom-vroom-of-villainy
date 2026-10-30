@@ -70,6 +70,11 @@ textarea{width:100%;min-height:140px;padding:10px;border:1px solid var(--line);b
 .sched span{color:var(--muted)}
 .sched b{font-weight:600;color:var(--ink)}
 .sessions button small{font-weight:500;opacity:.75}
+.f1head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
+.seg button{border:0;background:none;padding:7px 16px;border-radius:999px;font-weight:600;font-size:.92rem;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.row .nm .code{font-family:var(--body);font-size:.75rem;font-weight:600;color:var(--muted);margin-left:8px;letter-spacing:.04em}
 .lockmsg{display:inline-flex;align-items:center;gap:6px}
 
 .sessions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
@@ -251,7 +256,7 @@ function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 
 const S={mode:"loading",league:null,picks:{},results:{},canWrite:true,me:lsGet(ME_KEY),
-  tab:"weekend",raceId:null,session:null,editing:null,draft:[],setupDraft:null,setupDirty:false,newPlayers:["","","",""],newSeason:"2026"};
+  tab:"weekend",f1:{kind:"drivers",data:null,loading:false,error:null},raceId:null,session:null,editing:null,draft:[],setupDraft:null,setupDirty:false,newPlayers:["","","",""],newSeason:"2026"};
 let db=null;
 
 const app=document.getElementById("app");
@@ -377,10 +382,10 @@ function render(){
   </header>
   ${L().adminPin?`<p class="note" style="margin:-4px 0 8px;text-align:right">${S.isAdmin?`Admin mode on. <button class="linkbtn" data-act="admin-off">Turn off</button>`:`<button class="linkbtn" data-act="admin-on">Admin login</button>`}</p>`:""}
   <nav class="tabs" role="tablist">
-    ${[["weekend","Race weekend"],["standings","Standings"],["setup","League setup"]].map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}
+    ${[["weekend","Race weekend"],["standings","League standings"],["f1","F1 standings"],["setup","League setup"]].map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}
   </nav>
   <p class="note">${esc(modeNote)}</p>
-  ${S.tab==="weekend"?renderWeekend(race):S.tab==="standings"?renderStandings():renderSetup()}`;
+  ${S.tab==="weekend"?renderWeekend(race):S.tab==="standings"?renderStandings():S.tab==="f1"?renderF1():renderSetup()}`;
 }
 
 function renderStart(){
@@ -510,6 +515,55 @@ function renderStandings(){
   return `<div class="tower">${tower}</div>${breakdown}`;
 }
 
+function teamColorFuzzy(name,id){
+  const s=(String(name)+" "+String(id)).toLowerCase();
+  const pairs=[["mclaren","McLaren"],["ferrari","Ferrari"],["red_bull","Red Bull"],["red bull","Red Bull"],["mercedes","Mercedes"],["aston","Aston Martin"],["alpine","Alpine"],["williams","Williams"],["racing bulls","Racing Bulls"],["rb f1","Racing Bulls"],["visa","Racing Bulls"],[" rb","Racing Bulls"],["audi","Audi"],["sauber","Audi"],["haas","Haas"],["cadillac","Cadillac"]];
+  for(const [k,t] of pairs)if(s.includes(k))return TEAM_COLORS[t];
+  return "#8C929C";
+}
+const fmtPts=n=>Number.isInteger(n)?String(n):n.toFixed(1);
+async function jget(url){const r=await fetch(url,{headers:{Accept:"application/json"}});if(!r.ok)throw new Error("http "+r.status);return r.json()}
+async function loadF1Standings(force){
+  const f=S.f1;if(f.loading||(f.data&&!force))return;
+  f.loading=true;f.error=null;render();
+  const y=/^\d{4}$/.test(String(L().season||"").trim())?String(L().season).trim():"current";
+  try{
+    const base="https://api.jolpi.ca/ergast/f1/"+y;
+    const [d,c]=await Promise.all([jget(base+"/driverstandings/"),jget(base+"/constructorstandings/")]);
+    const dl=d.MRData.StandingsTable.StandingsLists[0];const cl=c.MRData.StandingsTable.StandingsLists[0];
+    if(!dl)throw new Error("empty");
+    f.data={season:dl.season,round:+dl.round,
+      drivers:dl.DriverStandings.map(x=>{const t=(x.Constructors||[]).slice(-1)[0]||{};return {pos:x.positionText||x.position,pts:+x.points,wins:+x.wins,code:x.Driver.code||"",name:(x.Driver.givenName+" "+x.Driver.familyName).trim(),team:t.name||"",teamId:t.constructorId||""}}),
+      teams:cl?cl.ConstructorStandings.map(x=>({pos:x.positionText||x.position,pts:+x.points,wins:+x.wins,name:x.Constructor.name,id:x.Constructor.constructorId})):[]};
+    f.fetched=Date.now();
+  }catch(e){f.error="Couldn’t load the championship standings right now. Try again in a bit."}
+  f.loading=false;render();
+}
+function renderF1(){
+  const f=S.f1;
+  if(!f.data&&!f.loading&&!f.error)setTimeout(()=>loadF1Standings(false),0);
+  const head=`<div class="f1head">
+    <div class="seg" role="group" aria-label="Championship">
+      <button aria-pressed="${f.kind==="drivers"}" data-act="f1kind" data-v="drivers">Drivers</button>
+      <button aria-pressed="${f.kind==="teams"}" data-act="f1kind" data-v="teams">Constructors</button>
+    </div>
+    <button class="btn ghost" data-act="f1refresh" ${f.loading?"disabled":""}>${f.loading?"Loading…":"Refresh"}</button>
+  </div>`;
+  if(f.error&&!f.data)return head+`<div class="panel"><p style="margin:0">${esc(f.error)}</p></div>`;
+  if(!f.data)return head+`<p class="note">Loading the championship…</p>`;
+  const d=f.data;const roundRace=races()[d.round-1];
+  const sub=`<p class="note">${esc(d.season)} ${f.kind==="drivers"?"World Drivers’ Championship":"World Constructors’ Championship"}, after round ${d.round}${roundRace?" ("+esc(roundRace.name)+")":""}. Standings usually update the day after each Grand Prix.</p>`;
+  const list=f.kind==="drivers"?d.drivers:d.teams;
+  if(!list.length)return head+sub+`<p class="note">No standings published yet.</p>`;
+  const lead=list[0].pts;
+  const rows=list.map((x,i)=>`<div class="row ${i===0?"lead":""}">
+    <div class="posn">${esc(x.pos)}</div>
+    <div class="bar" style="background:${f.kind==="drivers"?teamColorFuzzy(x.team,x.teamId):teamColorFuzzy(x.name,x.id)}"></div>
+    <div class="nm">${esc(x.name)}${f.kind==="drivers"&&x.code?`<span class="code">${esc(x.code)}</span>`:""}<small>${f.kind==="drivers"?esc(x.team)+", ":""}${x.wins} win${x.wins===1?"":"s"}</small></div>
+    <div class="gap">${i===0?"Leader":lead-x.pts?"−"+fmtPts(lead-x.pts):"Tied"}</div>
+    <div class="tot">${fmtPts(x.pts)}</div></div>`).join("");
+  return head+sub+`<div class="tower">${rows}</div>`;
+}
 function renderSetup(){
   if(!S.setupDraft){S.setupDraft=clone(L());S.setupDirty=false}
   const d=S.setupDraft;const dis=S.canWrite&&admin()?"":"disabled";
@@ -591,6 +645,8 @@ app.addEventListener("click",async e=>{
       if(pin.trim()===String(L().adminPin)){S.isAdmin=true;lsSet(ADMIN_KEY,"1");toast("Admin mode on")}else toast("That PIN doesn’t match");render();break}
     case "admin-off": S.isAdmin=false;lsSet(ADMIN_KEY,"0");S.setupDraft=null;render();break;
     case "import": await runImport();break;
+    case "f1kind": S.f1.kind=b.dataset.v;render();break;
+    case "f1refresh": loadF1Standings(true);break;
     case "fetch-all": b.disabled=true;await fetchAllMissing();break;
     case "fetch-result":{const ed=S.editing;b.disabled=true;b.textContent="Fetching…";of1Cache={sessions:{},drivers:{}};
       try{const x=await of1Top5(raceById(ed.raceId),ed.k);
