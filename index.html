@@ -66,6 +66,11 @@ textarea{width:100%;min-height:140px;padding:10px;border:1px solid var(--line);b
 .racemeta{color:var(--muted);font-size:.9rem;margin:0 0 16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .tag{display:inline-block;font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--ink)}
 .tag.sprint{background:var(--red);color:var(--on-red)}
+.sched{display:flex;flex-wrap:wrap;gap:6px 18px;margin:-8px 0 16px;font-size:.88rem}
+.sched span{color:var(--muted)}
+.sched b{font-weight:600;color:var(--ink)}
+.sessions button small{font-weight:500;opacity:.75}
+.lockmsg{display:inline-flex;align-items:center;gap:6px}
 
 .sessions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 .sessions button{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:999px;font-weight:600;font-size:.92rem;display:flex;align-items:center;gap:6px}
@@ -238,6 +243,9 @@ const DEFAULT_RACES=[
   ["abu","Abu Dhabi","2026-12-06",0]
 ].map(([id,name,date,s])=>({id:"2026-"+id,name,date,sprint:!!s}));
 
+/* Official 2026 session start times (UTC). Bahrain-in-Malaysia comes from the F1 data service. */
+const DEFAULT_TIMES={"2026-aus":{"q":"2026-03-07T05:00Z","r":"2026-03-08T04:00Z"},"2026-jpn":{"q":"2026-03-28T06:00Z","r":"2026-03-29T05:00Z"},"2026-mon":{"q":"2026-06-06T14:00Z","r":"2026-06-07T13:00Z"},"2026-bcn":{"q":"2026-06-13T14:00Z","r":"2026-06-14T13:00Z"},"2026-aut":{"q":"2026-06-27T14:00Z","r":"2026-06-28T13:00Z"},"2026-bel":{"q":"2026-07-18T14:00Z","r":"2026-07-19T13:00Z"},"2026-hun":{"q":"2026-07-25T14:00Z","r":"2026-07-26T13:00Z"},"2026-ita":{"q":"2026-09-05T14:00Z","r":"2026-09-06T13:00Z"},"2026-mad":{"q":"2026-09-12T14:00Z","r":"2026-09-13T13:00Z"},"2026-aze":{"q":"2026-09-25T12:00Z","r":"2026-09-26T11:00Z"},"2026-usa":{"q":"2026-10-24T21:00Z","r":"2026-10-25T20:00Z"},"2026-mex":{"q":"2026-10-31T21:00Z","r":"2026-11-01T20:00Z"},"2026-bra":{"q":"2026-11-07T18:00Z","r":"2026-11-08T17:00Z"},"2026-lvg":{"q":"2026-11-21T04:00Z","r":"2026-11-22T04:00Z"},"2026-qat":{"q":"2026-11-28T18:00Z","r":"2026-11-29T16:00Z"},"2026-abu":{"q":"2026-12-05T14:00Z","r":"2026-12-06T13:00Z"},"2026-chn":{"sq":"2026-03-13T07:30Z","s":"2026-03-14T03:00Z","q":"2026-03-14T07:00Z","r":"2026-03-15T07:00Z"},"2026-mia":{"sq":"2026-05-01T20:30Z","s":"2026-05-02T16:00Z","q":"2026-05-02T20:00Z","r":"2026-05-03T20:00Z"},"2026-can":{"sq":"2026-05-22T20:30Z","s":"2026-05-23T16:00Z","q":"2026-05-23T20:00Z","r":"2026-05-24T20:00Z"},"2026-gbr":{"sq":"2026-07-03T15:30Z","s":"2026-07-04T11:00Z","q":"2026-07-04T15:00Z","r":"2026-07-05T14:00Z"},"2026-ned":{"sq":"2026-08-21T14:30Z","s":"2026-08-22T10:00Z","q":"2026-08-22T14:00Z","r":"2026-08-23T13:00Z"},"2026-sgp":{"sq":"2026-10-09T12:30Z","s":"2026-10-10T09:00Z","q":"2026-10-10T13:00Z","r":"2026-10-11T12:00Z"}};
+const OF1_TIMES={};
 const LS_KEY="vvv-local-v1", ME_KEY="vvv-me", ADMIN_KEY="vvv-admin";
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
@@ -316,6 +324,30 @@ function defaultSession(race){
   const ss=sessionsFor(race);
   return (ss.find(s=>!resultArr(race.id,s.k))||ss[ss.length-1]).k;
 }
+function startTime(race,k){
+  const t=(race.times&&race.times[k])||(OF1_TIMES[race.id]&&OF1_TIMES[race.id][k])||(DEFAULT_TIMES[race.id]&&DEFAULT_TIMES[race.id][k]);
+  if(!t)return null;const ms=new Date(t).getTime();return isNaN(ms)?null:ms;
+}
+const isLocked=(race,k)=>{const t=startTime(race,k);return t!=null&&Date.now()>=t};
+function fmtCT(ms){
+  return new Date(ms).toLocaleString("en-US",{timeZone:"America/Chicago",weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZoneName:"short"});
+}
+function fmtCTShort(ms){
+  return new Date(ms).toLocaleString("en-US",{timeZone:"America/Chicago",weekday:"short",hour:"numeric",minute:"2-digit"});
+}
+function fmtIn(ms){
+  let s=Math.max(0,Math.round((ms-Date.now())/60000));const d=Math.floor(s/1440);s-=d*1440;const hr=Math.floor(s/60);const m=s%60;
+  return d?`${d}d ${hr}h`:hr?`${hr}h ${m}m`:`${m}m`;
+}
+async function loadOF1Times(){
+  if(loadOF1Times.done)return;loadOF1Times.done=true;
+  try{
+    const years=[...new Set(races().map(r=>String(r.date).slice(0,4)).filter(Boolean))];
+    for(const y of years)await of1Sessions(+y);
+    for(const r of races()){for(const s of sessionsFor(r)){const m=await of1FindSession(r,s.k);if(m&&m.date_start){(OF1_TIMES[r.id]=OF1_TIMES[r.id]||{})[s.k]=m.date_start}}}
+    render();
+  }catch(e){}
+}
 function fmtDate(d){if(!d)return"";const x=new Date(d+"T12:00:00");return isNaN(x)?d:x.toLocaleDateString(undefined,{month:"short",day:"numeric"})}
 
 /* ---------- render ---------- */
@@ -386,7 +418,8 @@ function renderWeekend(race){
     <button class="iconbtn" data-act="race-step" data-v="1" aria-label="Next race" ${idx>=rs.length-1?"disabled":""}>›</button>
   </div>
   <p class="racemeta">Race day ${esc(fmtDate(race.date))} ${race.sprint?`<span class="tag sprint">Sprint weekend</span>`:""}</p>
-  <div class="sessions">${ss.map(s=>`<button aria-pressed="${s.k===S.session}" data-act="session" data-v="${s.k}"><span class="dot ${resultArr(race.id,s.k)?"done":""}"></span>${s.name}</button>`).join("")}</div>
+  <div class="sched">${ss.map(s=>{const t=startTime(race,s.k);return `<span>${s.name}: <b>${t?esc(fmtCT(t)):"time TBC"}</b></span>`}).join("")}</div>
+  <div class="sessions">${ss.map(s=>`<button aria-pressed="${s.k===S.session}" data-act="session" data-v="${s.k}"><span class="dot ${resultArr(race.id,s.k)?"done":""}"></span>${s.name}${startTime(race,s.k)?` <small>${esc(fmtCTShort(startTime(race,s.k)))}</small>`:""}</button>`).join("")}</div>
   ${S.editing&&S.editing.raceId===race.id&&S.editing.k===sess.k?renderPicker(race,sess):renderSession(race,sess)}`;
 }
 
@@ -394,11 +427,16 @@ function renderSession(race,sess){
   const res=resultArr(race.id,sess.k);
   const me=players().find(p=>p.id===S.me);
   const myPick=me?pickArr(race.id,me.id,sess.k):null;
-  let status=res?"Results are in. Points scored.":"Open for picks. Others’ picks stay hidden until results are entered.";
+  const st=startTime(race,sess.k);const locked=isLocked(race,sess.k);
+  let status=res?"Results are in. Points scored."
+    :locked?`🔒 Picks locked when the session started${st?" ("+esc(fmtCT(st))+")":""}. Waiting for results.`
+    :st?`Open for picks until ${esc(fmtCT(st))}, in ${fmtIn(st)}. Others’ picks are hidden until then.`
+    :"Open for picks. Others’ picks are hidden until the session starts.";
+  if(!res&&locked&&admin()&&L().adminPin)status+=" As admin, you can still change picks.";
   const btns=[];
-  if(S.canWrite&&me&&!res)btns.push(`<button class="btn primary" data-act="edit-pick">${myPick&&myPick.some(Boolean)?"Change my picks":"Make my picks"}</button>`);
+  if(S.canWrite&&me&&!res&&(!locked||admin()))btns.push(`<button class="btn primary" data-act="edit-pick">${myPick&&myPick.some(Boolean)?"Change my picks":"Make my picks"}</button>`);
   if(S.canWrite)btns.push(`<button class="btn" data-act="edit-result">${res?"Edit results":"Enter results"}</button>`);
-  if(!me&&!res&&S.canWrite)status+=" Choose who you are at the top to make picks.";
+  if(!me&&!res&&!locked&&S.canWrite)status+=" Choose who you are at the top to make picks.";
 
   const ps=players();
   const scores=ps.map(p=>res?scoreSession(pickArr(race.id,p.id,sess.k),res):null);
@@ -406,7 +444,7 @@ function renderSession(race,sess){
     <td>${res?chip(res[i]):`<span class="chip blank">—</span>`}</td>
     ${ps.map((p,j)=>{
       const pk=pickArr(race.id,p.id,sess.k);
-      const visible=res||p.id===S.me;
+      const visible=res||locked||p.id===S.me;
       if(!visible){return `<td>${i===0?`<span class="chip blank">${pk&&pk.some(Boolean)?"Locked in ✓":"No picks yet"}</span>`:""}</td>`}
       return `<td>${chip(pk&&pk[i],res?scores[j].marks[i]:"")}</td>`;
     }).join("")}</tr>`).join("");
@@ -539,7 +577,7 @@ app.addEventListener("click",async e=>{
     case "save-edit":{
       const ed=S.editing;if(ed.type==="result"&&!full(S.draft))return;
       if(ed.type==="pick"){
-        if(resultArr(ed.raceId,ed.k)&&!admin()){toast("Results are already in for this session");S.editing=null;render();return}
+        if((resultArr(ed.raceId,ed.k)||isLocked(raceById(ed.raceId),ed.k))&&!admin()){toast("Picks are locked. This session has already started");S.editing=null;render();return}
         await savePicks(ed);
       }else{
         const cur=clone(S.results[ed.raceId]||{raceId:ed.raceId});cur[ed.k]=S.draft.slice();cur.updated=Date.now();
@@ -560,7 +598,8 @@ app.addEventListener("click",async e=>{
         else{S.draft=x.codes;toast(x.unknown.length?`Filled in, but ${x.unknown.join(", ")} isn’t in your driver list`:"Filled in. Check it, then tap Save results")}}
       catch(e){toast("Couldn’t reach the F1 data service. Try again later")}
       render();break}
-    case "remove-picks":{const ed=S.editing;const pl=players().find(p=>p.id===ed.pid);
+    case "remove-picks":{const ed=S.editing;
+      if(isLocked(raceById(ed.raceId),ed.k)&&!admin()){toast("Picks are locked. This session has already started");S.editing=null;render();return}const pl=players().find(p=>p.id===ed.pid);
       if(!confirm(`Remove ${pl?pl.name+"’s":"these"} picks for this session?`))return;
       S.draft=[null,null,null,null,null];await savePicks(ed);break}
     case "newplayer-add": S.newPlayers.push("");render();break;
@@ -771,16 +810,17 @@ async function init(){
   }catch(e){ok=false;db=null}
   if(ok){
     const got={l:false,p:false,r:false};
-    const ready=()=>{if(got.l&&got.p&&got.r){S.mode="shared";render()}};
+    const ready=()=>{if(got.l&&got.p&&got.r){S.mode="shared";render();if(S.league)loadOF1Times()}};
     const onErr=e=>{if(e&&e.code==="permission-denied")toast("The database refused access. Check your Firestore rules");else toast("Lost connection to the league. Reload to reconnect")};
     db.doc("league/main").onSnapshot(s=>{S.league=s.exists?s.data():null;got.l=true;ready()},onErr);
     db.collection("picks").onSnapshot(s=>{const o={};s.docs.forEach(d=>{o[d.id]=d.data()});S.picks=o;got.p=true;ready()},onErr);
     db.collection("results").onSnapshot(s=>{const o={};s.docs.forEach(d=>{o[d.id]=d.data()});S.results=o;got.r=true;ready()},onErr);
   }else{
-    loadLocal();S.mode="local";render();
+    loadLocal();S.mode="local";render();if(S.league)loadOF1Times();
   }
 }
 init();
+setInterval(()=>{if(S.league&&S.tab==="weekend"&&!S.editing&&!drag)render()},30000);
 })();
 </script>
 </body>
