@@ -265,7 +265,7 @@ const uid=p=>p+Math.random().toString(36).slice(2,9);
 const clone=o=>JSON.parse(JSON.stringify(o));
 
 let toastT;
-function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),2200)}
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),Math.max(2200,msg.length*60))}
 
 /* ---------- storage ---------- */
 function saveLocal(){lsSet(LS_KEY,JSON.stringify({league:S.league,picks:S.picks,results:S.results}))}
@@ -648,11 +648,11 @@ app.addEventListener("click",async e=>{
     case "f1kind": S.f1.kind=b.dataset.v;render();break;
     case "f1refresh": loadF1Standings(true);break;
     case "fetch-all": b.disabled=true;await fetchAllMissing();break;
-    case "fetch-result":{const ed=S.editing;b.disabled=true;b.textContent="Fetching…";of1Cache={sessions:{},drivers:{}};
-      try{const x=await of1Top5(raceById(ed.raceId),ed.k);
+    case "fetch-result":{const ed=S.editing;b.disabled=true;b.textContent="Fetching…";of1Cache={sessions:{},drivers:{}};jolCache={};
+      try{const x=await getTop5(raceById(ed.raceId),ed.k);
         if(x.error)toast(x.error);
         else{S.draft=x.codes;toast(x.unknown.length?`Filled in, but ${x.unknown.join(", ")} isn’t in your driver list`:"Filled in. Check it, then tap Save results")}}
-      catch(e){toast("Couldn’t reach the F1 data service. Try again later")}
+      catch(e){toast(LIVE_PAUSE_MSG)}
       render();break}
     case "remove-picks":{const ed=S.editing;
       if(isLocked(raceById(ed.raceId),ed.k)&&!admin()){toast("Picks are locked. This session has already started");S.editing=null;render();return}const pl=players().find(p=>p.id===ed.pid);
@@ -829,8 +829,41 @@ async function of1Top5(race,k){
   top.forEach(r=>{const c=ac[r.driver_number];if(c&&codes.has(c))out[r.position-1]=c;else unknown.push(c||("car #"+r.driver_number))});
   return {codes:out,unknown};
 }
+/* Backup source: Jolpica (Ergast successor). No sprint qualifying there. */
+const JOL="https://api.jolpi.ca/ergast/f1";
+let jolCache={};
+async function jolRound(race){
+  const y=String(race.date).slice(0,4);
+  if(!jolCache[y]){const d=await jget(`${JOL}/${y}/races/?limit=100`);jolCache[y]=(d.MRData.RaceTable.Races)||[]}
+  const rd=Date.parse(race.date+"T12:00:00Z");
+  const m=jolCache[y].find(r=>Math.abs(Date.parse(r.date+"T12:00:00Z")-rd)<=3*864e5);
+  return m?{y,round:m.round}:null;
+}
+async function jolTop5(race,k){
+  if(k==="sq")return {error:"Sprint qualifying results are only in the main data service, which may be paused during a live session. Try again later or enter them by hand"};
+  if(!race.date)return {error:"This race has no date set"};
+  const rr=await jolRound(race);if(!rr)return {error:"This race isn’t in the F1 data yet"};
+  const path=k==="q"?"qualifying":k==="s"?"sprint":"results";
+  const d=await jget(`${JOL}/${rr.y}/${rr.round}/${path}/`);
+  const R=(d.MRData.RaceTable.Races||[])[0];
+  const rows=R?(R.QualifyingResults||R.SprintResults||R.Results||[]):[];
+  const top=rows.filter(x=>+x.position>=1&&+x.position<=5).sort((a,b)=>a.position-b.position);
+  if(top.length<5)return {error:"Official results aren’t published yet. Try again a bit later"};
+  const codes=new Set((L().drivers||[]).map(x=>x.c));
+  const out=[null,null,null,null,null];const unknown=[];
+  top.forEach(x=>{const c=String((x.Driver&&x.Driver.code)||"").toUpperCase();if(c&&codes.has(c))out[+x.position-1]=c;else unknown.push(c||((x.Driver&&x.Driver.familyName)||"unknown driver"))});
+  return {codes:out,unknown};
+}
+/* Try OpenF1 first, then Jolpica. Throws only if both services are unreachable. */
+async function getTop5(race,k){
+  let primary=null,primaryFailed=false;
+  try{primary=await of1Top5(race,k);if(!primary.error)return primary}catch(e){primaryFailed=true}
+  try{const b=await jolTop5(race,k);if(!b.error||!primary)return b;return primary}
+  catch(e){if(primaryFailed)throw new Error("both");return primary}
+}
+const LIVE_PAUSE_MSG="Couldn’t reach the F1 data services. The main one pauses free access while any session is live on a race weekend, so try again after the session ends";
 async function fetchAllMissing(){
-  of1Cache={sessions:{},drivers:{}};
+  of1Cache={sessions:{},drivers:{}};jolCache={};
   const now=Date.now();const todo=[];
   races().forEach(r=>{if(r.date&&new Date(r.date+"T23:59:59Z").getTime()<now)sessionsFor(r).forEach(s=>{if(!resultArr(r.id,s.k))todo.push([r,s])})});
   if(!todo.length){toast("Every past session already has results");return}
@@ -839,14 +872,14 @@ async function fetchAllMissing(){
   for(const [r,s] of todo){
     S.fetchStatus=`Fetching ${done+failed.length+1} of ${todo.length}: ${r.name} ${s.name}…`;setFetchStatus();
     try{
-      const x=await of1Top5(r,s.k);
+      const x=await getTop5(r,s.k);
       if(x.error)failed.push(`${r.name} ${s.name} (${x.error.split(".")[0].toLowerCase()})`);
       else if(!full(x.codes))failed.push(`${r.name} ${s.name} (${x.unknown.join(", ")} not in your driver list)`);
       else{
         const cur=clone(S.results[r.id]||{raceId:r.id});cur[s.k]=x.codes;cur.updated=Date.now();
         if(await write("results/"+r.id,cur)){S.results[r.id]=cur;done++}else failed.push(`${r.name} ${s.name} (couldn’t save)`);
       }
-    }catch(e){failed.push(`${r.name} ${s.name} (couldn’t reach the data service)`)}
+    }catch(e){failed.push(`${r.name} ${s.name} (data services unreachable, likely paused for a live session)`)}
     await sleep(350);
   }
   S.fetchStatus=`Added ${done} session result${done===1?"":"s"}.`+(failed.length?` Couldn’t fill ${failed.length}: ${failed.join("; ")}.`:"");
