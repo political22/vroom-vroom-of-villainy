@@ -809,38 +809,50 @@ function renderFacts(race){
 }
 /* ---------- F1 news (publishers' public RSS feeds) ---------- */
 const NEWS_SOURCES=[
-  {id:"f1",name:"Formula1.com",url:"https://www.formula1.com/en/latest/all.xml"},
-  {id:"bbc",name:"BBC Sport",url:"https://feeds.bbci.co.uk/sport/formula1/rss.xml"},
-  {id:"sky",name:"Sky Sports",url:"https://www.skysports.com/rss/12433"},
-  {id:"autosport",name:"Autosport",url:"https://www.autosport.com/rss/f1/news/"},
-  {id:"motorsport",name:"Motorsport.com",url:"https://www.motorsport.com/rss/f1/news/"},
-  {id:"racefans",name:"RaceFans",url:"https://www.racefans.net/feed/"},
-  {id:"planetf1",name:"PlanetF1",url:"https://www.planetf1.com/rss"},
-  {id:"therace",name:"The Race",url:"https://www.the-race.com/feed/"},
-  {id:"espn",name:"ESPN",url:"https://www.espn.com/espn/rss/f1/news"},
-  {id:"crash",name:"Crash.net",url:"https://www.crash.net/rss/f1"},
-  {id:"gpfans",name:"GPFans",url:"https://www.gpfans.com/en/rss.xml"},
-  {id:"gpblog",name:"GPblog",url:"https://www.gpblog.com/en/rss/index.xml"}
+  {id:"f1",name:"Formula1.com",urls:["https://www.formula1.com/en/latest/all.xml"]},
+  {id:"bbc",name:"BBC Sport",urls:["https://feeds.bbci.co.uk/sport/formula1/rss.xml"]},
+  {id:"sky",name:"Sky Sports",urls:["https://www.skysports.com/rss/12433"]},
+  {id:"autosport",name:"Autosport",urls:["https://www.autosport.com/rss/f1/news/"]},
+  {id:"motorsport",name:"Motorsport.com",urls:["https://www.motorsport.com/rss/f1/news/","https://www.motorsport.com/rss/f1/news"]},
+  {id:"racefans",name:"RaceFans",urls:["https://www.racefans.net/feed/"]},
+  {id:"planetf1",name:"PlanetF1",urls:["https://www.planetf1.com/rss","https://www.planetf1.com/feed"]},
+  {id:"therace",name:"The Race",urls:["https://www.the-race.com/feed/"]},
+  {id:"guardian",name:"The Guardian",urls:["https://www.theguardian.com/sport/formulaone/rss"]},
+  {id:"mweek",name:"Motorsport Week",urls:["https://www.motorsportweek.com/feed/"]},
+  {id:"crash",name:"Crash.net",urls:["https://www.crash.net/rss/f1"]},
+  {id:"gpfans",name:"GPFans",urls:["https://www.gpfans.com/en/rss.xml"]},
+  {id:"gpblog",name:"GPblog",urls:["https://www.gpblog.com/en/rss/index.xml","https://www.gpblog.com/en/rss"]}
 ];
-const NEWS_KEY="vvv-news-v1",NEWS_TTL=15*60e3;
+const NEWS_KEY="vvv-news-v2",NEWS_TTL=15*60e3;
 const N={items:null,failed:[],loading:false,at:0,src:"all",q:"",limit:40};
 function parseWhen(s){if(!s)return 0;let t=Date.parse(s);if(isNaN(t)&&/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s))t=Date.parse(s.replace(" ","T")+"Z");return isNaN(t)?0:t}
 function plainText(html){try{const d=new DOMParser().parseFromString("<body>"+String(html||"")+"</body>","text/html");return (d.body.textContent||"").replace(/\s+/g," ").trim()}catch(e){return ""}}
 function teaser(s){s=plainText(s);if(s.length<=220)return s;const cut=s.slice(0,220);return cut.slice(0,cut.lastIndexOf(" ")>150?cut.lastIndexOf(" "):220)+"…"}
 const safeUrl=u=>/^https?:\/\//i.test(String(u||"").trim())?String(u).trim():"";
-async function fetchFeed(src){
-  try{
-    const r=await fetch("https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(src.url));
-    if(r.ok){const j=await r.json();if(j&&j.status==="ok"&&Array.isArray(j.items)&&j.items.length)
-      return j.items.map(it=>({title:plainText(it.title),link:safeUrl(it.link),when:parseWhen(it.pubDate),desc:teaser(it.description||it.content)}))}
-  }catch(e){}
-  const r=await fetch("https://api.allorigins.win/raw?url="+encodeURIComponent(src.url));
-  if(!r.ok)throw new Error("http "+r.status);
-  const xml=new DOMParser().parseFromString(await r.text(),"text/xml");
+async function fetchT(url,ms){const c=new AbortController();const t=setTimeout(()=>c.abort(),ms||9000);try{return await fetch(url,{signal:c.signal})}finally{clearTimeout(t)}}
+function parseXmlFeed(txt){
+  const xml=new DOMParser().parseFromString(txt,"text/xml");
   const nodes=[...xml.querySelectorAll("item, entry")];if(!nodes.length)throw new Error("empty");
   const get=(n,sel)=>{const e=n.querySelector(sel);return e?e.textContent:""};
   return nodes.slice(0,30).map(n=>{const le=n.querySelector("link");const link=le?(le.getAttribute("href")||le.textContent):"";
     return {title:plainText(get(n,"title")),link:safeUrl(link),when:parseWhen(get(n,"pubDate")||get(n,"published")||get(n,"updated")),desc:teaser(get(n,"description")||get(n,"summary"))}});
+}
+/* Several free feed readers, tried in turn, because some publishers block one or another */
+const FEED_ROUTES=[
+  async u=>{const r=await fetchT("https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(u));if(!r.ok)throw 0;const j=await r.json();
+    if(!(j&&j.status==="ok"&&Array.isArray(j.items)&&j.items.length))throw 0;
+    return j.items.map(it=>({title:plainText(it.title),link:safeUrl(it.link),when:parseWhen(it.pubDate),desc:teaser(it.description||it.content)}))},
+  async u=>{const r=await fetchT("https://api.allorigins.win/raw?url="+encodeURIComponent(u));if(!r.ok)throw 0;return parseXmlFeed(await r.text())},
+  async u=>{const r=await fetchT("https://api.codetabs.com/v1/proxy/?quest="+encodeURIComponent(u));if(!r.ok)throw 0;return parseXmlFeed(await r.text())},
+  async u=>{const r=await fetchT("https://corsproxy.io/?url="+encodeURIComponent(u));if(!r.ok)throw 0;return parseXmlFeed(await r.text())}
+];
+async function fetchFeed(src){
+  for(const route of FEED_ROUTES){
+    for(const u of src.urls){
+      try{const items=(await route(u)).filter(it=>it.title&&it.link);if(items.length)return items}catch(e){}
+    }
+  }
+  throw new Error("unavailable");
 }
 async function loadNews(force){
   if(N.loading)return;
