@@ -93,6 +93,10 @@ table.wins td.n{text-align:right;font-family:var(--display);font-weight:800;font
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .row .nm .code{font-family:var(--body);font-size:.75rem;font-weight:600;color:var(--muted);margin-left:8px;letter-spacing:.04em}
 .lockmsg{display:inline-flex;align-items:center;gap:6px}
+.mxbadge{display:inline-block;margin:6px 0 4px;padding:3px 10px;border-radius:999px;background:var(--red);color:var(--on-red);font-weight:700;font-size:.85rem}
+table.picks tr.mxrow td{border-top:2px dashed var(--line)}
+.star{color:var(--red)}
+.slots li.mxslot{border-color:var(--red)}
 
 .sessions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 .sessions button{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:999px;font-weight:600;font-size:.92rem;display:flex;align-items:center;gap:6px}
@@ -414,7 +418,25 @@ const driver=c=>(L().drivers||[]).find(d=>d.c===c)||{c,n:c,t:""};
 const teamColor=t=>TEAM_COLORS[t]||"#8C929C";
 const full=a=>Array.isArray(a)&&a.length===5&&a.every(Boolean);
 const pickKey=(raceId,pid)=>raceId+"__"+pid;
-const resultArr=(raceId,k)=>{const r=S.results[raceId];return r&&full(r[k])?r[k]:null};
+/* Pick format: classic top 5, or top 3 + a mystery position drawn per session */
+const fmt=()=>(L()&&L().format)||{type:"top5"};
+const isMx=race=>{const f=fmt();return f.type==="top3mx"&&!!race&&(!f.from||(!!race.date&&String(race.date)>=f.from))};
+const slotsFor=race=>isMx(race)?4:5;
+function hashStr(s){let x=2166136261;for(let i=0;i<s.length;i++){x^=s.charCodeAt(i);x=Math.imul(x,16777619)}return x>>>0}
+function mysteryPos(race,k){
+  const r=S.results[race.id];if(r&&r.mx&&r.mx[k])return r.mx[k];
+  const f=fmt();const lo=Math.min(22,Math.max(4,+f.min||4));const hi=Math.min(22,Math.max(lo,+f.max||22));
+  return lo+hashStr(race.id+"|"+k+"|"+(L().season||""))%(hi-lo+1);
+}
+const slotLabel=(race,k,i)=>isMx(race)&&i===3?"P"+mysteryPos(race,k):"P"+(i+1);
+const wantPositions=(race,k)=>isMx(race)?[1,2,3,mysteryPos(race,k)]:[1,2,3,4,5];
+const completeFor=(race,a)=>{const n=slotsFor(race);return Array.isArray(a)&&a.length>=n&&a.slice(0,n).every(Boolean)};
+function resultDoc(race,k,codes){
+  const cur=clone(S.results[race.id]||{raceId:race.id});cur[k]=codes.slice(0,slotsFor(race));cur.updated=Date.now();
+  if(isMx(race)){cur.mx=Object.assign({},cur.mx||{},{[k]:mysteryPos(race,k)})}else if(cur.mx){delete cur.mx[k];if(!Object.keys(cur.mx).length)delete cur.mx}
+  return cur;
+}
+const resultArr=(raceId,k)=>{const r=S.results[raceId];if(!r)return null;const race=raceById(raceId)||{id:raceId};return completeFor(race,r[k])?r[k]:null};
 const pickArr=(raceId,pid,k)=>{const p=S.picks[pickKey(raceId,pid)];return p&&Array.isArray(p[k])?p[k]:null};
 function players(){return L().players||[]}
 const admin=()=>S.isAdmin||!L().adminPin;
@@ -422,14 +444,17 @@ const pinOk=pid=>{const p=players().find(x=>x.id===pid);if(!p||!p.pin)return tru
 function playerColor(pid){const i=players().findIndex(p=>p.id===pid);return PLAYER_COLORS[(i<0?0:i)%PLAYER_COLORS.length]}
 
 const weightOf=k=>{const w=((L().scoring||{}).weights||{})[k];const n=Number(w);return w==null||w===""||isNaN(n)?1:Math.max(0,n)};
-function scoreSession(pick,result,k){
+function scoreSession(pick,result,k,race){
   const sc=L().scoring||{exact:1,partial:0};const wt=k?weightOf(k):1;
+  const mx=isMx(race);const n=mx?4:5;const pool=mx?result.slice(0,3):result.slice(0,5);
+  const mxPts=sc.mystery==null||sc.mystery===""?Number(sc.exact)||0:Number(sc.mystery)||0;
   const marks=[];let pts=0,exact=0;
-  for(let i=0;i<5;i++){
+  for(let i=0;i<n;i++){
     const d=pick&&pick[i];
     if(!d){marks.push("blank");continue}
+    if(mx&&i===3){if(result[3]===d){pts+=mxPts;exact++;marks.push("exact")}else marks.push("miss");continue}
     if(result[i]===d){pts+=Number(sc.exact)||0;exact++;marks.push("exact")}
-    else if(result.includes(d)){pts+=Number(sc.partial)||0;marks.push("partial")}
+    else if(pool.includes(d)){pts+=Number(sc.partial)||0;marks.push("partial")}
     else marks.push("miss");
   }
   pts=Math.round(pts*wt*100)/100;
@@ -439,7 +464,7 @@ function raceScore(race,pid){
   let pts=0,exact=0,scored=false;
   for(const s of sessionsFor(race)){
     const res=resultArr(race.id,s.k);if(!res)continue;scored=true;
-    const r=scoreSession(pickArr(race.id,pid,s.k),res,s.k);pts+=r.pts;exact+=r.exact;
+    const r=scoreSession(pickArr(race.id,pid,s.k),res,s.k,race);pts+=r.pts;exact+=r.exact;
   }
   return {pts,exact,scored};
 }
@@ -569,8 +594,8 @@ function renderSession(race,sess){
   if(!me&&!res&&!locked&&S.canWrite)status+=" Choose who you are at the top to make picks.";
 
   const ps=players();
-  const scores=ps.map(p=>res?scoreSession(pickArr(race.id,p.id,sess.k),res,sess.k):null);
-  const rows=[0,1,2,3,4].map(i=>`<tr><td class="pos">P${i+1}</td>
+  const scores=ps.map(p=>res?scoreSession(pickArr(race.id,p.id,sess.k),res,sess.k,race):null);
+  const rows=[...Array(slotsFor(race)).keys()].map(i=>`<tr class="${isMx(race)&&i===3?"mxrow":""}"><td class="pos">${slotLabel(race,sess.k,i)}${isMx(race)&&i===3?` <span class="star" title="Mystery position">★</span>`:""}</td>
     <td>${res?chip(res[i]):`<span class="chip blank">—</span>`}</td>
     ${ps.map((p,j)=>{
       const pk=pickArr(race.id,p.id,sess.k);
@@ -581,11 +606,11 @@ function renderSession(race,sess){
   const total=res?`<tr class="total"><td></td><td style="color:var(--muted);font-size:.85rem">Points</td>${scores.map(s=>`<td class="pts">${s.pts}</td>`).join("")}</tr>`:"";
   const sc=L().scoring||{};
   return `<div class="panel">
-    <div class="panelhead"><div><h2>${esc(sess.name)}</h2><div class="status">${status}</div></div><div class="actions">${btns.join("")}</div></div>
+    <div class="panelhead"><div><h2>${esc(sess.name)}</h2>${isMx(race)?`<div class="mxbadge">★ Mystery spot: P${mysteryPos(race,sess.k)}</div>`:""}<div class="status">${status}</div></div><div class="actions">${btns.join("")}</div></div>
     <div class="gridscroll"><table class="picks">
       <thead><tr><th></th><th class="res">Result</th>${ps.map(p=>`<th><span class="sw" style="background:${playerColor(p.id)};margin-right:6px"></span>${esc(p.name)}</th>`).join("")}</tr></thead>
       <tbody>${rows}${total}</tbody></table></div>
-    <div class="legend">${weightOf(sess.k)!==1?`<span><b>${weightOf(sess.k)}× points</b> this session</span>`:""}<span><i class="sw" style="background:var(--exact)"></i>Exact spot: ${Number(sc.exact)||0} pt${Number(sc.exact)===1?"":"s"}</span>
+    <div class="legend">${weightOf(sess.k)!==1?`<span><b>${weightOf(sess.k)}× points</b> this session</span>`:""}${isMx(race)?`<span>★ Mystery spot: ${(()=>{const s=L().scoring||{};const v=s.mystery==null||s.mystery===""?Number(s.exact)||0:Number(s.mystery);return v+" pt"+(v===1?"":"s")})()}</span>`:""}<span><i class="sw" style="background:var(--exact)"></i>Exact spot: ${Number(sc.exact)||0} pt${Number(sc.exact)===1?"":"s"}</span>
     ${Number(sc.partial)?`<span><i class="sw" style="background:var(--partial)"></i>In top 5, wrong spot: ${Number(sc.partial)} pt${Number(sc.partial)===1?"":"s"}</span>`:""}</div>
     ${admin()&&S.canWrite?`<div class="admin"><span>Admin: enter or fix picks for</span>${ps.map(p=>`<button class="btn" data-act="edit-pick" data-pid="${esc(p.id)}">${esc(p.name)}</button>`).join("")}</div>`:""}
   </div>`;
@@ -594,7 +619,8 @@ function renderSession(race,sess){
 function renderPicker(race,sess){
   const isResult=S.editing.type==="result";
   const me=players().find(p=>p.id===S.editing.pid);
-  const title=isResult?`Official ${sess.name.toLowerCase()} top 5`:`${me?esc(me.name)+"’s":"Your"} ${sess.name.toLowerCase()} top 5`;
+  const fmtName=isMx(race)?"top 3 + mystery spot":"top 5";
+  const title=isResult?`Official ${sess.name.toLowerCase()} ${fmtName}`:`${me?esc(me.name)+"’s":"Your"} ${sess.name.toLowerCase()} ${fmtName}`;
   const chosen=new Set(S.draft.filter(Boolean));
   const firstEmpty=S.draft.findIndex(x=>!x);
   const existing=isResult?null:pickArr(race.id,S.editing.pid,sess.k);const had=!!(existing&&existing.some(Boolean));
@@ -602,14 +628,15 @@ function renderPicker(race,sess){
   const teams=[];(L().drivers||[]).forEach(d=>{if(!teams.includes(d.t))teams.push(d.t)});
   const ordered=teams.flatMap(t=>(L().drivers||[]).filter(d=>d.t===t));
   return `<div class="panel">
-    <div class="panelhead"><div><h2>${title}</h2><div class="status">Tap drivers in finishing order. Drag ⋮⋮ to reorder, tap ✕ to clear a spot.${isResult?" All 5 spots are needed.":" You can leave spots empty, for example to pick only a top 3."}</div></div></div>
-    <ol class="slots">${[0,1,2,3,4].map(i=>{const c=S.draft[i];const d=c?driver(c):null;
-      return `<li class="${c?"filled":""}" data-slot="${i}"><span class="p">P${i+1}</span>
+    <div class="panelhead"><div><h2>${title}</h2><div class="status">Tap drivers in finishing order. Drag ⋮⋮ to reorder, tap ✕ to clear a spot.${isResult?" Every spot is needed.":" You can leave spots empty."}</div></div></div>
+    ${isMx(race)?`<div class="mxbadge" style="margin-bottom:10px">★ Mystery spot: P${mysteryPos(race,sess.k)}. Who finishes there?</div>`:""}
+    <ol class="slots">${[...Array(slotsFor(race)).keys()].map(i=>{const c=S.draft[i];const d=c?driver(c):null;
+      return `<li class="${c?"filled":""} ${isMx(race)&&i===3?"mxslot":""}" data-slot="${i}"><span class="p">${slotLabel(race,sess.k,i)}</span>
         <span class="who">${d?`${esc(d.n)}<small>${esc(d.t)}</small>`:`<span class="empty">${i===firstEmpty?"Next pick goes here":isResult?"Empty":"Empty (no pick)"}</span>`}</span>
-        ${c?`<button class="grip" data-grip="${i}" aria-label="Drag to reorder ${esc(d.n)}, or use arrow keys">⋮⋮</button><button data-act="slot-clear" data-i="${i}" aria-label="Clear P${i+1}">✕</button>`:""}</li>`}).join("")}</ol>
+        ${c?`<button class="grip" data-grip="${i}" aria-label="Drag to reorder ${esc(d.n)}, or use arrow keys">⋮⋮</button><button data-act="slot-clear" data-i="${i}" aria-label="Clear ${slotLabel(race,sess.k,i)}">✕</button>`:""}</li>`}).join("")}</ol>
     <div class="drivers">${ordered.map(d=>`<button class="drv" data-act="pick-driver" data-v="${esc(d.c)}" ${chosen.has(d.c)||firstEmpty<0?"disabled":""}><i style="background:${teamColor(d.t)}"></i><b>${esc(d.c)}</b><span>${esc(d.n)}</span></button>`).join("")}</div>
     <div class="actions">
-      <button class="btn primary" data-act="save-edit" ${(isResult?full(S.draft):(!empty||had))?"":"disabled"}>${isResult?"Save results":empty&&had?"Save (removes picks)":"Save picks"}</button>
+      <button class="btn primary" data-act="save-edit" ${(isResult?completeFor(race,S.draft):(!empty||had))?"":"disabled"}>${isResult?"Save results":empty&&had?"Save (removes picks)":"Save picks"}</button>
       ${isResult?`<button class="btn" data-act="fetch-result">Fetch from F1 data</button>`:""}
       <button class="btn ghost" data-act="cancel-edit">Cancel</button>
       ${isResult&&resultArr(race.id,sess.k)?`<button class="btn ghost" data-act="clear-result">Remove results</button>`:""}
@@ -771,6 +798,15 @@ function renderSetup(){
         <label class="field">Points for right driver, wrong spot<input type="number" min="0" step="1" data-set="partial" value="${esc(d.scoring.partial)}" ${dis}></label>
       </div>
       <p class="hint">Set the second one to 0 to only reward exact spots. Changes rescore the whole season.</p>
+      <p class="field" style="margin:14px 0 6px">Pick format</p>
+      <div class="cols2">
+        <label class="field">Format<select data-fmt="type" ${dis}><option value="top5" ${(d.format||{}).type!=="top3mx"?"selected":""}>Top 5</option><option value="top3mx" ${(d.format||{}).type==="top3mx"?"selected":""}>Top 3 + mystery spot</option></select></label>
+        <label class="field">Starts with races on or after<input type="date" data-fmt="from" value="${esc((d.format||{}).from||"2027-01-01")}" ${dis}></label>
+        <label class="field">Mystery spot lowest<input type="number" min="4" max="22" data-fmt="min" value="${esc((d.format||{}).min??4)}" ${dis}></label>
+        <label class="field">Mystery spot highest<input type="number" min="4" max="22" data-fmt="max" value="${esc((d.format||{}).max??22)}" ${dis}></label>
+        <label class="field">Points for the mystery spot<input type="number" min="0" step="1" data-set="mystery" value="${esc(d.scoring.mystery??d.scoring.exact)}" ${dis}></label>
+      </div>
+      <p class="hint">With “Top 3 + mystery spot”, each session gets a random position (like P14) that everyone sees before picks open. Races before the start date keep the top-5 format and their scores.</p>
       <p class="field" style="margin:14px 0 6px">Points multiplier per session</p>
       <div class="cols2">${SESSIONS.map(s=>`<label class="field">${s.name}<input type="number" min="0" step="0.5" data-weight="${s.k}" value="${esc(((d.scoring.weights||{})[s.k])??1)}" ${dis}></label>`).join("")}</div>
       <p class="hint">For example, set Grand Prix to 2 to make race picks worth double. Leave at 1 for equal scoring.</p>
@@ -825,19 +861,19 @@ app.addEventListener("click",async e=>{
       S.tab=b.dataset.v;S.editing=null;render();break;
     case "race-step":{const rs=races();const i=rs.findIndex(r=>r.id===S.raceId)+Number(b.dataset.v);if(rs[i]){S.raceId=rs[i].id;S.session=defaultSession(rs[i]);S.editing=null;render()}break}
     case "session": S.session=b.dataset.v;S.editing=null;render();break;
-    case "edit-pick":{const pid=b.dataset.pid||S.me;const p=pickArr(race.id,pid,S.session);S.draft=p?p.slice(0,5):[];while(S.draft.length<5)S.draft.push(null);S.editing={type:"pick",raceId:race.id,k:S.session,pid};render();break}
-    case "edit-result":{const r=S.results[race.id];const arr=r&&Array.isArray(r[S.session])?r[S.session]:[];S.draft=arr.slice(0,5);while(S.draft.length<5)S.draft.push(null);S.editing={type:"result",raceId:race.id,k:S.session};render();break}
+    case "edit-pick":{const pid=b.dataset.pid||S.me;const p=pickArr(race.id,pid,S.session);const n=slotsFor(race);S.draft=p?p.slice(0,n):[];while(S.draft.length<n)S.draft.push(null);S.editing={type:"pick",raceId:race.id,k:S.session,pid};render();break}
+    case "edit-result":{const r=S.results[race.id];const arr=r&&Array.isArray(r[S.session])?r[S.session]:[];const n=slotsFor(race);S.draft=arr.slice(0,n);while(S.draft.length<n)S.draft.push(null);S.editing={type:"result",raceId:race.id,k:S.session};render();break}
     case "pick-driver":{const i=S.draft.findIndex(x=>!x);if(i>=0){S.draft[i]=b.dataset.v;render()}break}
     case "slot-clear": S.draft[+b.dataset.i]=null;render();break;
     case "slot-up":{const i=+b.dataset.i;[S.draft[i-1],S.draft[i]]=[S.draft[i],S.draft[i-1]];render();break}
     case "cancel-edit": S.editing=null;render();break;
     case "save-edit":{
-      const ed=S.editing;if(ed.type==="result"&&!full(S.draft))return;
+      const ed=S.editing;if(ed.type==="result"&&!completeFor(raceById(ed.raceId),S.draft))return;
       if(ed.type==="pick"){
         if((resultArr(ed.raceId,ed.k)||isLocked(raceById(ed.raceId),ed.k))&&!admin()){toast("Picks are locked. This session has already started");S.editing=null;render();return}
         await savePicks(ed);
       }else{
-        const cur=clone(S.results[ed.raceId]||{raceId:ed.raceId});cur[ed.k]=S.draft.slice();cur.updated=Date.now();
+        const cur=resultDoc(raceById(ed.raceId),ed.k,S.draft);
         if(await write("results/"+ed.raceId,cur)){toast("Results saved. Points updated");S.editing=null;render()}
       }
       break}
@@ -876,7 +912,7 @@ app.addEventListener("click",async e=>{
     case "remove-picks":{const ed=S.editing;
       if(isLocked(raceById(ed.raceId),ed.k)&&!admin()){toast("Picks are locked. This session has already started");S.editing=null;render();return}const pl=players().find(p=>p.id===ed.pid);
       if(!confirm(`Remove ${pl?pl.name+"’s":"these"} picks for this session?`))return;
-      S.draft=[null,null,null,null,null];await savePicks(ed);break}
+      S.draft=Array(slotsFor(raceById(ed.raceId))).fill(null);await savePicks(ed);break}
     case "newplayer-add": S.newPlayers.push("");render();break;
     case "newplayer-rm": S.newPlayers.splice(+b.dataset.i,1);render();break;
     case "create":{
@@ -902,7 +938,11 @@ app.addEventListener("click",async e=>{
       const codes=d.drivers.map(x=>x.c);if(new Set(codes).size!==codes.length){toast("Two drivers share the same code");return}
       d.races=d.races.filter(r=>r.name.trim());
       const wIn=d.scoring.weights||{};const weights={};SESSIONS.forEach(s=>{const n=Number(wIn[s.k]);weights[s.k]=wIn[s.k]===""||wIn[s.k]==null||isNaN(n)?1:Math.max(0,n)});
+      const myst=d.scoring.mystery;
       d.scoring={exact:Math.max(0,Number(d.scoring.exact)||0),partial:Math.max(0,Number(d.scoring.partial)||0),weights};
+      if(myst!=null&&myst!==""&&!isNaN(Number(myst)))d.scoring.mystery=Math.max(0,Number(myst));
+      const fIn=d.format||{type:"top5"};const lo=Math.min(22,Math.max(4,parseInt(fIn.min)||4));const hi=Math.min(22,Math.max(lo,parseInt(fIn.max)||22));
+      d.format={type:fIn.type==="top3mx"?"top3mx":"top5",from:fIn.from===undefined?"2027-01-01":String(fIn.from||""),min:lo,max:hi};
       b.blur();
       if(await write("league/main",d)){S.setupDraft=null;toast("League saved");render()}
       break}
@@ -922,6 +962,7 @@ app.addEventListener("change",e=>{
   if(t.dataset.act==="facts-race"){S.factsRace=t.value;render();return}
   if(t.dataset.act==="race"){S.raceId=t.value;S.session=defaultSession(raceById(t.value));S.editing=null;render();return}
   if(t.dataset.list&&t.type==="checkbox"){S.setupDraft[t.dataset.list][+t.dataset.i][t.dataset.f]=t.checked;markDirty()}
+  if(t.dataset.fmt&&t.tagName==="SELECT"){S.setupDraft.format=S.setupDraft.format||{};S.setupDraft.format.type=t.value;markDirty()}
   if(t.dataset.list&&t.tagName==="SELECT"){S.setupDraft[t.dataset.list][+t.dataset.i][t.dataset.f]=t.value;markDirty()}
 });
 app.addEventListener("input",e=>{
@@ -933,6 +974,8 @@ app.addEventListener("input",e=>{
   if(t.dataset.list&&t.type!=="checkbox"&&t.tagName!=="SELECT"){S.setupDraft[t.dataset.list][+t.dataset.i][t.dataset.f]=t.value;markDirty()}
   else if(t.dataset.set==="season"){S.setupDraft.season=t.value;markDirty()}
   else if(t.dataset.set==="adminPin"){S.setupDraft.adminPin=t.value.trim();markDirty()}
+  else if(t.dataset.fmt){S.setupDraft.format=S.setupDraft.format||{type:"top5"};S.setupDraft.format[t.dataset.fmt]=t.value;markDirty()}
+  else if(t.dataset.set==="mystery"){S.setupDraft.scoring.mystery=t.value;markDirty()}
   else if(t.dataset.weight){S.setupDraft.scoring.weights=S.setupDraft.scoring.weights||{};S.setupDraft.scoring.weights[t.dataset.weight]=t.value;markDirty()}
   else if(t.dataset.set==="exact"||t.dataset.set==="partial"){S.setupDraft.scoring[t.dataset.set]=t.value;markDirty()}
 });
@@ -1051,12 +1094,13 @@ async function of1Top5(race,k){
   const s=await of1FindSession(race,k);
   if(!s)return {error:"This session isn’t in the F1 data yet"};
   const rows=(await of1Get("/session_result?session_key="+s.session_key))||[];
-  const top=rows.filter(r=>Number.isInteger(r.position)&&r.position>=1&&r.position<=5).sort((a,b)=>a.position-b.position);
-  if(top.length<5)return {error:"Official results aren’t published yet. Try again a bit later"};
+  const want=wantPositions(race,k);const byPos={};
+  rows.forEach(r=>{if(Number.isInteger(r.position))byPos[r.position]=r});
+  if(want.some(p=>!byPos[p]))return {error:"Official results aren’t published yet. Try again a bit later"};
   const ac=await of1Acronyms(s.meeting_key);
   const codes=new Set((L().drivers||[]).map(d=>d.c));
-  const out=[null,null,null,null,null];const unknown=[];
-  top.forEach(r=>{const c=ac[r.driver_number];if(c&&codes.has(c))out[r.position-1]=c;else unknown.push(c||("car #"+r.driver_number))});
+  const out=want.map(()=>null);const unknown=[];
+  want.forEach((p,i)=>{const r=byPos[p];const c=ac[r.driver_number];if(c&&codes.has(c))out[i]=c;else unknown.push(c||("car #"+r.driver_number))});
   return {codes:out,unknown};
 }
 /* Backup source: Jolpica (Ergast successor). No sprint qualifying there. */
@@ -1077,11 +1121,12 @@ async function jolTop5(race,k){
   const d=await jget(`${JOL}/${rr.y}/${rr.round}/${path}/`);
   const R=(d.MRData.RaceTable.Races||[])[0];
   const rows=R?(R.QualifyingResults||R.SprintResults||R.Results||[]):[];
-  const top=rows.filter(x=>+x.position>=1&&+x.position<=5).sort((a,b)=>a.position-b.position);
-  if(top.length<5)return {error:"Official results aren’t published yet. Try again a bit later"};
+  const want=wantPositions(race,k);const byPos={};
+  rows.forEach(x=>{if(+x.position)byPos[+x.position]=x});
+  if(want.some(p=>!byPos[p]))return {error:"Official results aren’t published yet. Try again a bit later"};
   const codes=new Set((L().drivers||[]).map(x=>x.c));
-  const out=[null,null,null,null,null];const unknown=[];
-  top.forEach(x=>{const c=String((x.Driver&&x.Driver.code)||"").toUpperCase();if(c&&codes.has(c))out[+x.position-1]=c;else unknown.push(c||((x.Driver&&x.Driver.familyName)||"unknown driver"))});
+  const out=want.map(()=>null);const unknown=[];
+  want.forEach((p,i)=>{const x=byPos[p];const c=String((x.Driver&&x.Driver.code)||"").toUpperCase();if(c&&codes.has(c))out[i]=c;else unknown.push(c||((x.Driver&&x.Driver.familyName)||"unknown driver"))});
   return {codes:out,unknown};
 }
 /* Try OpenF1 first, then Jolpica. Throws only if both services are unreachable. */
@@ -1104,9 +1149,9 @@ async function fetchAllMissing(){
     try{
       const x=await getTop5(r,s.k);
       if(x.error)failed.push(`${r.name} ${s.name} (${x.error.split(".")[0].toLowerCase()})`);
-      else if(!full(x.codes))failed.push(`${r.name} ${s.name} (${x.unknown.join(", ")} not in your driver list)`);
+      else if(!completeFor(r,x.codes))failed.push(`${r.name} ${s.name} (${x.unknown.join(", ")} not in your driver list)`);
       else{
-        const cur=clone(S.results[r.id]||{raceId:r.id});cur[s.k]=x.codes;cur.updated=Date.now();
+        const cur=resultDoc(r,s.k,x.codes);
         if(await write("results/"+r.id,cur)){S.results[r.id]=cur;done++}else failed.push(`${r.name} ${s.name} (couldn’t save)`);
       }
     }catch(e){failed.push(`${r.name} ${s.name} (data services unreachable, likely paused for a live session)`)}
@@ -1152,8 +1197,8 @@ async function autoFetchResults(){
         try{
           of1Cache={sessions:{},drivers:{}};jolCache={};
           const x=await getTop5(r,s.k);
-          if(!x.error&&full(x.codes)&&!resultArr(r.id,s.k)){
-            const cur=clone(S.results[r.id]||{raceId:r.id});cur[s.k]=x.codes;cur.updated=Date.now();cur.auto=true;
+          if(!x.error&&completeFor(r,x.codes)&&!resultArr(r.id,s.k)){
+            const cur=resultDoc(r,s.k,x.codes);cur.auto=true;
             if(await write("results/"+r.id,cur)){S.results[r.id]=cur;toast(`${r.name} ${s.name.toLowerCase()} results filled in automatically`);render()}
           }
         }catch(e){}
