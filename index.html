@@ -71,6 +71,23 @@ textarea{width:100%;min-height:140px;padding:10px;border:1px solid var(--line);b
 .sched b{font-weight:600;color:var(--ink)}
 .sessions button small{font-weight:500;opacity:.75}
 .f1head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}
+.hero{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:14px;border-left:6px solid var(--red)}
+.hero h2{font-family:var(--display);font-style:italic;font-weight:800;font-size:clamp(1.8rem,5vw,2.4rem);line-height:1;margin:0 0 4px}
+.hero p{margin:0;color:var(--muted)}
+.hero .next{margin-top:10px;color:var(--ink);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:20px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.stat span{display:block;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.stat b{font-family:var(--display);font-weight:800;font-size:1.6rem;line-height:1.1}
+.stat small{color:var(--muted);font-size:.8rem;margin-left:4px}
+ol.facts{list-style:none;counter-reset:f;margin:0 0 24px;padding:0;display:grid;gap:8px}
+ol.facts li{counter-increment:f;display:grid;grid-template-columns:40px 1fr;gap:10px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px 12px 0}
+ol.facts li::before{content:counter(f);font-family:var(--display);font-style:italic;font-weight:800;font-size:1.5rem;color:var(--red);text-align:center;line-height:1.1}
+.twocol{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+table.wins{border-collapse:collapse;width:100%;font-size:.92rem}
+table.wins td{padding:7px 8px;border-bottom:1px solid var(--line)}
+table.wins td:first-child{font-family:var(--display);font-weight:700;color:var(--muted);width:56px}
+table.wins td.n{text-align:right;font-family:var(--display);font-weight:800;font-size:1.15rem}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
 .seg button{border:0;background:none;padding:7px 16px;border-radius:999px;font-weight:600;font-size:.92rem;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
@@ -251,12 +268,115 @@ const DEFAULT_RACES=[
 /* Official 2026 session start times (UTC). Bahrain-in-Malaysia comes from the F1 data service. */
 const DEFAULT_TIMES={"2026-aus":{"q":"2026-03-07T05:00Z","r":"2026-03-08T04:00Z"},"2026-jpn":{"q":"2026-03-28T06:00Z","r":"2026-03-29T05:00Z"},"2026-mon":{"q":"2026-06-06T14:00Z","r":"2026-06-07T13:00Z"},"2026-bcn":{"q":"2026-06-13T14:00Z","r":"2026-06-14T13:00Z"},"2026-aut":{"q":"2026-06-27T14:00Z","r":"2026-06-28T13:00Z"},"2026-bel":{"q":"2026-07-18T14:00Z","r":"2026-07-19T13:00Z"},"2026-hun":{"q":"2026-07-25T14:00Z","r":"2026-07-26T13:00Z"},"2026-ita":{"q":"2026-09-05T14:00Z","r":"2026-09-06T13:00Z"},"2026-mad":{"q":"2026-09-12T14:00Z","r":"2026-09-13T13:00Z"},"2026-aze":{"q":"2026-09-25T12:00Z","r":"2026-09-26T11:00Z"},"2026-usa":{"q":"2026-10-24T21:00Z","r":"2026-10-25T20:00Z"},"2026-mex":{"q":"2026-10-31T21:00Z","r":"2026-11-01T20:00Z"},"2026-bra":{"q":"2026-11-07T18:00Z","r":"2026-11-08T17:00Z"},"2026-lvg":{"q":"2026-11-21T04:00Z","r":"2026-11-22T04:00Z"},"2026-qat":{"q":"2026-11-28T18:00Z","r":"2026-11-29T16:00Z"},"2026-abu":{"q":"2026-12-05T14:00Z","r":"2026-12-06T13:00Z"},"2026-chn":{"sq":"2026-03-13T07:30Z","s":"2026-03-14T03:00Z","q":"2026-03-14T07:00Z","r":"2026-03-15T07:00Z"},"2026-mia":{"sq":"2026-05-01T20:30Z","s":"2026-05-02T16:00Z","q":"2026-05-02T20:00Z","r":"2026-05-03T20:00Z"},"2026-can":{"sq":"2026-05-22T20:30Z","s":"2026-05-23T16:00Z","q":"2026-05-23T20:00Z","r":"2026-05-24T20:00Z"},"2026-gbr":{"sq":"2026-07-03T15:30Z","s":"2026-07-04T11:00Z","q":"2026-07-04T15:00Z","r":"2026-07-05T14:00Z"},"2026-ned":{"sq":"2026-08-21T14:30Z","s":"2026-08-22T10:00Z","q":"2026-08-22T14:00Z","r":"2026-08-23T13:00Z"},"2026-sgp":{"sq":"2026-10-09T12:30Z","s":"2026-10-10T09:00Z","q":"2026-10-10T13:00Z","r":"2026-10-11T12:00Z"}};
 const OF1_TIMES={};
+const FACTS={
+aus:{circuit:"Albert Park Circuit",place:"Melbourne, Australia",km:5.278,laps:58,facts:[
+"The track loops around a lake in a public park, using roads that are open to everyday traffic for the rest of the year.",
+"Melbourne took over the Australian Grand Prix from Adelaide in 1996 and has usually opened the season since.",
+"The layout was reworked in 2022, removing a chicane to create a faster run and more overtaking chances."]},
+chn:{circuit:"Shanghai International Circuit",place:"Shanghai, China",km:5.451,laps:56,facts:[
+"The layout was designed to echo the Chinese character 上 (shàng), the first character of the city's name.",
+"Turns 1 and 2 form a long, ever-tightening right-hander that punishes the front-left tyre.",
+"The back straight is one of the longest on the calendar, at well over a kilometre."]},
+jpn:{circuit:"Suzuka International Racing Course",place:"Suzuka, Japan",km:5.807,laps:53,facts:[
+"Suzuka is a figure-of-eight: the track crosses over itself on a bridge, the only one on the calendar to do so.",
+"The circuit was built by Honda in the early 1960s as a test track.",
+"The flat-out 130R corner and the snaking Esses are among the most respected sections in racing.",
+"Suzuka has decided more world championships than almost any other venue, including the famous Senna–Prost clashes of 1989 and 1990."]},
+mia:{circuit:"Miami International Autodrome",place:"Miami Gardens, Florida, USA",km:5.412,laps:57,facts:[
+"The track is built around the Hard Rock Stadium, home of the Miami Dolphins.",
+"Miami joined the calendar in 2022 as the second US race of the season at the time.",
+"Its first year became famous for a ‘marina’ with painted-on water and boats sitting on a fake surface."]},
+can:{circuit:"Circuit Gilles Villeneuve",place:"Montreal, Canada",km:4.361,laps:70,facts:[
+"The circuit sits on Île Notre-Dame, a man-made island built for the 1967 World’s Fair.",
+"The final-chicane barrier is nicknamed the ‘Wall of Champions’ after three world champions crashed into it in 1999.",
+"The 2011 race, with a long rain delay, is the longest Grand Prix in history at just over four hours.",
+"It’s named after Gilles Villeneuve, who won the first race held here in 1978."]},
+mon:{circuit:"Circuit de Monaco",place:"Monte Carlo, Monaco",km:3.337,laps:78,facts:[
+"It’s the shortest and slowest track of the season, and the only race that runs well short of the usual 305 km distance.",
+"The Fairmont hairpin is the slowest corner in Formula 1, taken at walking-pace speeds of around 50 km/h.",
+"Overtaking is so hard that qualifying is often more important than the race itself.",
+"The first Monaco Grand Prix was held in 1929."]},
+bcn:{circuit:"Circuit de Barcelona-Catalunya",place:"Montmeló, Spain",km:4.657,laps:66,facts:[
+"Teams know it inside out: it has been one of F1’s main pre-season testing venues for decades.",
+"It has hosted the Spanish Grand Prix every year since 1991.",
+"The slow final chicane was removed in 2023, bringing back the original fast final corners."]},
+aut:{circuit:"Red Bull Ring",place:"Spielberg, Austria",km:4.318,laps:71,facts:[
+"With only ten corners, it produces one of the shortest lap times of the year, at just over a minute.",
+"The track climbs and drops steeply through the Styrian hills.",
+"It has had three names: the Österreichring, the A1-Ring, and now the Red Bull Ring."]},
+gbr:{circuit:"Silverstone Circuit",place:"Silverstone, United Kingdom",km:5.891,laps:52,facts:[
+"Silverstone hosted the very first World Championship Grand Prix, on 13 May 1950.",
+"It was built on a former World War II airfield, and the old runways shaped the original layout.",
+"The Maggotts, Becketts and Chapel sequence is one of the fastest direction changes in motorsport."]},
+bel:{circuit:"Circuit de Spa-Francorchamps",place:"Stavelot, Belgium",km:7.004,laps:44,facts:[
+"At about 7 km, Spa is the longest lap on the calendar.",
+"The Eau Rouge–Raidillon climb is one of the most famous corner sequences in the world.",
+"The track is so long that it can be raining on one part and dry on another."]},
+hun:{circuit:"Hungaroring",place:"Mogyoród, Hungary",km:4.381,laps:70,facts:[
+"In 1986 it hosted the first Formula 1 race held behind the Iron Curtain.",
+"It’s twisty, dusty and hard to pass on, which is why it’s often called ‘Monaco without the walls’.",
+"Summer heat makes it one of the most physically tiring races for drivers."]},
+ned:{circuit:"Circuit Zandvoort",place:"Zandvoort, Netherlands",km:4.259,laps:72,facts:[
+"The circuit winds through sand dunes right beside the North Sea coast.",
+"Two of its corners are steeply banked, which is rare in modern F1.",
+"The Dutch GP returned in 2021 after a 36-year break, and 2026 is set to be its final edition for now."]},
+ita:{circuit:"Autodromo Nazionale Monza",place:"Monza, Italy",km:5.793,laps:53,facts:[
+"Known as the ‘Temple of Speed’, Monza has the highest average lap speeds of the season.",
+"It opened in 1922 and is one of the oldest purpose-built circuits in the world.",
+"Teams bring special low-downforce wings just for this race.",
+"After the race, fans flood the track to gather under the famous podium that hangs over the pit straight."]},
+mad:{circuit:"Madring",place:"Madrid, Spain",facts:[
+"Madring is brand new for 2026: a hybrid layout mixing streets with roads around the IFEMA exhibition centre.",
+"Its signature corner, ‘La Monumental’, is a long, steeply banked turn.",
+"This gives Spain two Grands Prix in one season, alongside Barcelona."]},
+aze:{circuit:"Baku City Circuit",place:"Baku, Azerbaijan",km:6.003,laps:51,facts:[
+"The narrow section past the Old City walls is one of the tightest stretches in Formula 1.",
+"A flat-out run of over 2 km along the seafront makes for some of the highest top speeds of the year.",
+"Baku first hosted F1 in 2016, under the name European Grand Prix."]},
+bhr:{circuit:"Sepang International Circuit",place:"Sepang, Malaysia",km:5.543,laps:56,facts:[
+"In 2026 the Bahrain Grand Prix was moved here, so the race carries Bahrain’s name while running in Malaysia.",
+"Sepang hosted the Malaysian Grand Prix from 1999 to 2017, the first of many tracks designed by Hermann Tilke.",
+"Its two long straights meet at a tight hairpin, a classic overtaking spot.",
+"Sudden tropical downpours are common, which can turn races upside down."]},
+sgp:{circuit:"Marina Bay Street Circuit",place:"Singapore",km:4.940,laps:62,facts:[
+"Singapore hosted Formula 1’s first-ever night race, in 2008.",
+"Heat and humidity make it one of the toughest races physically, and drivers can lose a few kilograms in sweat.",
+"Safety cars are so common here that strategists almost plan for one."]},
+usa:{circuit:"Circuit of the Americas",place:"Austin, Texas, USA",km:5.513,laps:56,facts:[
+"COTA was the first purpose-built F1 circuit in the United States, opening in 2012.",
+"Turn 1 sits at the top of a steep uphill climb, where drivers brake blind into a wide hairpin.",
+"Its first sector borrows ideas from famous corners elsewhere, including Silverstone’s fast esses."]},
+mex:{circuit:"Autódromo Hermanos Rodríguez",place:"Mexico City, Mexico",km:4.304,laps:71,facts:[
+"At over 2,200 m above sea level, it’s the highest track on the calendar. The thin air cuts downforce and makes engine cooling harder.",
+"Teams run their biggest wings, yet cars still hit some of the season’s highest top speeds.",
+"The track runs through a baseball stadium, where huge crowds watch from the stands.",
+"It’s named after brothers Ricardo and Pedro Rodríguez, Mexico’s pioneering F1 drivers."]},
+bra:{circuit:"Autódromo José Carlos Pace (Interlagos)",place:"São Paulo, Brazil",km:4.309,laps:71,facts:[
+"‘Interlagos’ means ‘between lakes’, after the two reservoirs nearby.",
+"It’s one of the few tracks that run anti-clockwise, which is hard on drivers’ necks.",
+"The opening ‘Senna S’ is named after Ayrton Senna, whose 1991 home win is one of F1’s great stories.",
+"Sudden rain has made it the scene of many dramatic title deciders."]},
+lvg:{circuit:"Las Vegas Strip Circuit",place:"Las Vegas, Nevada, USA",km:6.201,laps:50,facts:[
+"The race runs late on Saturday night local time, with cars racing down the famous Las Vegas Strip.",
+"Cold desert nights make it hard to get tyres up to temperature.",
+"F1 first raced in Las Vegas in 1981 and 1982, in a car park at Caesars Palace."]},
+qat:{circuit:"Lusail International Circuit",place:"Lusail, Qatar",km:5.419,laps:57,facts:[
+"Lusail was built for motorcycle racing and joined Formula 1 in 2021.",
+"The race is held at night under floodlights.",
+"Its long, fast corners are so hard on tyres that in 2023 teams were limited in how many laps a set could run."]},
+abu:{circuit:"Yas Marina Circuit",place:"Abu Dhabi, UAE",km:5.281,laps:58,facts:[
+"The race starts in daylight and finishes under floodlights.",
+"The pit exit dives through a tunnel underneath the track.",
+"Abu Dhabi has usually hosted the season finale, including the dramatic 2021 title decider."]}
+};
+const CIRCUIT_TO_FACTS={albert_park:"aus",shanghai:"chn",suzuka:"jpn",miami:"mia",villeneuve:"can",monaco:"mon",catalunya:"bcn",red_bull_ring:"aut",silverstone:"gbr",spa:"bel",hungaroring:"hun",zandvoort:"ned",monza:"ita",madring:"mad",baku:"aze",sepang:"bhr",marina_bay:"sgp",americas:"usa",rodriguez:"mex",interlagos:"bra",vegas:"lvg",losail:"qat",yas_marina:"abu"};
+
 const LS_KEY="vvv-local-v1", ME_KEY="vvv-me", ADMIN_KEY="vvv-admin";
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 
 const S={mode:"loading",league:null,picks:{},results:{},canWrite:true,me:lsGet(ME_KEY),
-  tab:"weekend",f1:{kind:"drivers",data:null,loading:false,error:null},raceId:null,session:null,editing:null,draft:[],setupDraft:null,setupDirty:false,newPlayers:["","","",""],newSeason:"2026"};
+  tab:"weekend",factsRace:null,factsInfo:{},f1:{kind:"drivers",data:null,loading:false,error:null},raceId:null,session:null,editing:null,draft:[],setupDraft:null,setupDirty:false,newPlayers:["","","",""],newSeason:"2026"};
 let db=null;
 
 const app=document.getElementById("app");
@@ -382,10 +502,10 @@ function render(){
   </header>
   ${L().adminPin?`<p class="note" style="margin:-4px 0 8px;text-align:right">${S.isAdmin?`Admin mode on. <button class="linkbtn" data-act="admin-off">Turn off</button>`:`<button class="linkbtn" data-act="admin-on">Admin login</button>`}</p>`:""}
   <nav class="tabs" role="tablist">
-    ${[["weekend","Race weekend"],["standings","League standings"],["f1","F1 standings"],["setup","League setup"]].map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}
+    ${[["weekend","Race weekend"],["standings","League standings"],["f1","F1 standings"],["facts","Race facts"],["setup","League setup"]].map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}
   </nav>
   <p class="note">${esc(modeNote)}</p>
-  ${S.tab==="weekend"?renderWeekend(race):S.tab==="standings"?renderStandings():S.tab==="f1"?renderF1():renderSetup()}`;
+  ${S.tab==="weekend"?renderWeekend(race):S.tab==="standings"?renderStandings():S.tab==="f1"?renderF1():S.tab==="facts"?renderFacts():renderSetup()}`;
 }
 
 function renderStart(){
@@ -564,6 +684,74 @@ function renderF1(){
     <div class="tot">${fmtPts(x.pts)}</div></div>`).join("");
   return head+sub+`<div class="tower">${rows}</div>`;
 }
+function defaultFactsRace(){
+  const now=Date.now();const rs=races();
+  const r=rs.find(x=>{const t=startTime(x,"r");const end=t?t+3*3600e3:Date.parse(x.date+"T23:59:59Z");return end>now});
+  return (r||rs[rs.length-1]||{}).id;
+}
+async function jolRaceMeta(race){
+  const y=String(race.date).slice(0,4);
+  if(!jolCache[y]){const d=await jget(`${JOL}/${y}/races/?limit=100`);jolCache[y]=(d.MRData.RaceTable.Races)||[]}
+  const rd=Date.parse(race.date+"T12:00:00Z");
+  return jolCache[y].find(r=>Math.abs(Date.parse(r.date+"T12:00:00Z")-rd)<=3*864e5)||null;
+}
+async function loadFactsInfo(race){
+  if(S.factsInfo[race.id])return;
+  const info=S.factsInfo[race.id]={loading:true};
+  try{
+    const m=await jolRaceMeta(race);
+    if(m&&m.Circuit){
+      info.circuitId=m.Circuit.circuitId;info.circuitName=m.Circuit.circuitName;
+      const loc=m.Circuit.Location||{};info.place=[loc.locality,loc.country].filter(Boolean).join(", ");
+      const d=await jget(`${JOL}/circuits/${encodeURIComponent(info.circuitId)}/results/1/?limit=100`);
+      const rs=(d.MRData.RaceTable.Races||[]).filter(x=>x.Results&&x.Results[0]);
+      info.winners=rs.map(x=>({season:x.season,name:(x.Results[0].Driver.givenName+" "+x.Results[0].Driver.familyName).trim(),team:(x.Results[0].Constructor||{}).name||""}));
+      const cnt={};info.winners.forEach(w=>{cnt[w.name]=(cnt[w.name]||0)+1});
+      info.most=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,5).filter(x=>x[1]>1);
+    }
+  }catch(e){info.error=true}
+  info.loading=false;if(S.tab==="facts")render();
+}
+function factsFor(race){
+  const info=S.factsInfo[race.id]||{};
+  let key=info.circuitId&&CIRCUIT_TO_FACTS[info.circuitId];
+  if(!key&&/^2026-/.test(race.id))key=race.id.slice(5);
+  return key&&FACTS[key]?FACTS[key]:null;
+}
+function renderFacts(){
+  const rs=races();if(!rs.length)return `<div class="panel"><p>No races on the calendar yet.</p></div>`;
+  if(!S.factsRace||!raceById(S.factsRace))S.factsRace=defaultFactsRace();
+  const race=raceById(S.factsRace);const idx=rs.findIndex(r=>r.id===race.id);
+  if(!S.factsInfo[race.id])setTimeout(()=>loadFactsInfo(race),0);
+  const info=S.factsInfo[race.id]||{loading:true};const F=factsFor(race);
+  const now=Date.now();const ss=sessionsFor(race);
+  const nextS=ss.map(s=>({s,t:startTime(race,s.k)})).filter(x=>x.t&&x.t>now).sort((a,b)=>a.t-b.t)[0];
+  const lastT=startTime(race,"r");
+  const nextLine=nextS?`Next up: ${nextS.s.name}, ${esc(fmtCT(nextS.t))} (in ${fmtIn(nextS.t)})`:lastT&&lastT<now?"This race weekend is complete.":"";
+  const circuit=(F&&F.circuit)||info.circuitName||"";const place=(F&&F.place)||info.place||"";
+  const stats=[];
+  if(F&&F.km){stats.push(`<div class="stat"><span>Lap length</span><b>${F.km.toFixed(3)}</b><small>km (${(F.km*0.621371).toFixed(2)} mi)</small></div>`)}
+  if(F&&F.laps){stats.push(`<div class="stat"><span>Race laps</span><b>${F.laps}</b></div>`)}
+  if(F&&F.km&&F.laps){const dist=F.km*F.laps;stats.push(`<div class="stat"><span>Race distance</span><b>${dist.toFixed(1)}</b><small>km (${(dist*0.621371).toFixed(0)} mi)</small></div>`)}
+  stats.push(`<div class="stat"><span>Format</span><b>${race.sprint?"Sprint":"Standard"}</b><small>weekend</small></div>`);
+  if(info.winners&&info.winners.length)stats.push(`<div class="stat"><span>F1 races here</span><b>${info.winners.length}</b></div>`);
+  const recent=info.winners?info.winners.slice(-6).reverse():[];
+  const live=info.loading?`<p class="note">Loading past winners…</p>`
+    :info.error?`<p class="note">Couldn’t load past winners right now.</p>`
+    :!recent.length?`<p class="note">No past F1 races at this circuit${F&&race.id==="2026-mad"?". It’s brand new":""}.</p>`
+    :`<div class="twocol"><div><h3 class="sec">Recent winners here</h3><table class="wins">${recent.map(w=>`<tr><td>${esc(w.season)}</td><td>${esc(w.name)}<br><small style="color:var(--muted)">${esc(w.team)}</small></td></tr>`).join("")}</table></div>
+      ${info.most&&info.most.length?`<div><h3 class="sec">Most wins here</h3><table class="wins">${info.most.map(([n,c],i)=>`<tr><td>${i+1}</td><td>${esc(n)}</td><td class="n">${c}</td></tr>`).join("")}</table></div>`:""}</div>`;
+  return `
+  <div class="racebar">
+    <button class="iconbtn" data-act="facts-step" data-v="-1" aria-label="Previous race" ${idx<=0?"disabled":""}>‹</button>
+    <select data-act="facts-race" aria-label="Choose race">${rs.map((r,i)=>`<option value="${esc(r.id)}" ${r.id===race.id?"selected":""}>Round ${i+1}: ${esc(r.name)}</option>`).join("")}</select>
+    <button class="iconbtn" data-act="facts-step" data-v="1" aria-label="Next race" ${idx>=rs.length-1?"disabled":""}>›</button>
+  </div>
+  <div class="hero" style="margin-top:12px"><h2>${esc(race.name)} Grand Prix</h2><p>${esc([circuit,place].filter(Boolean).join(", "))}</p>${nextLine?`<p class="next">${nextLine}</p>`:""}</div>
+  <div class="stats">${stats.join("")}</div>
+  ${F?`<h3 class="sec">Did you know?</h3><ol class="facts">${F.facts.map(f=>`<li><span>${esc(f)}</span></li>`).join("")}</ol>`:`<p class="note">No fun facts saved for this circuit yet.</p>`}
+  ${live}`;
+}
 function renderSetup(){
   if(!S.setupDraft){S.setupDraft=clone(L());S.setupDirty=false}
   const d=S.setupDraft;const dis=S.canWrite&&admin()?"":"disabled";
@@ -645,6 +833,7 @@ app.addEventListener("click",async e=>{
       if(pin.trim()===String(L().adminPin)){S.isAdmin=true;lsSet(ADMIN_KEY,"1");toast("Admin mode on")}else toast("That PIN doesn’t match");render();break}
     case "admin-off": S.isAdmin=false;lsSet(ADMIN_KEY,"0");S.setupDraft=null;render();break;
     case "import": await runImport();break;
+    case "facts-step":{const rs=races();const i=rs.findIndex(r=>r.id===S.factsRace)+Number(b.dataset.v);if(rs[i]){S.factsRace=rs[i].id;render()}break}
     case "f1kind": S.f1.kind=b.dataset.v;render();break;
     case "f1refresh": loadF1Standings(true);break;
     case "fetch-all": b.disabled=true;await fetchAllMissing();break;
@@ -691,6 +880,7 @@ app.addEventListener("click",async e=>{
 app.addEventListener("change",e=>{
   const t=e.target;
   if(t.dataset.act==="me"){S.me=t.value;lsSet(ME_KEY,t.value);S.editing=null;render();return}
+  if(t.dataset.act==="facts-race"){S.factsRace=t.value;render();return}
   if(t.dataset.act==="race"){S.raceId=t.value;S.session=defaultSession(raceById(t.value));S.editing=null;render();return}
   if(t.dataset.list&&t.type==="checkbox"){S.setupDraft[t.dataset.list][+t.dataset.i][t.dataset.f]=t.checked;markDirty()}
   if(t.dataset.list&&t.tagName==="SELECT"){S.setupDraft[t.dataset.list][+t.dataset.i][t.dataset.f]=t.value;markDirty()}
@@ -909,7 +1099,7 @@ async function init(){
   }
 }
 init();
-setInterval(()=>{if(S.league&&S.tab==="weekend"&&!S.editing&&!drag)render()},30000);
+setInterval(()=>{if(S.league&&(S.tab==="weekend"||S.tab==="facts")&&!S.editing&&!drag)render()},30000);
 })();
 </script>
 </body>
