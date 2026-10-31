@@ -511,6 +511,7 @@ function render(){
   if(S.tab==="setup"&&ae&&ae.closest&&ae.closest("#setup")&&ae.tagName!=="BUTTON")return; // don't clobber typing
   if(!L()){app.innerHTML=renderStart();return}
   if(S.me&&(!players().some(p=>p.id===S.me)||!pinOk(S.me)))S.me="";
+  if(S.tab==="setup"&&!admin()){S.tab="weekend";S.setupDraft=null}
   if(!S.raceId||!raceById(S.raceId))S.raceId=defaultRace();
   const race=raceById(S.raceId);
   if(race&&(!S.session||!sessionsFor(race).some(s=>s.k===S.session)))S.session=defaultSession(race);
@@ -532,7 +533,7 @@ function render(){
   ${S.me&&S.canWrite?(()=>{const p=players().find(x=>x.id===S.me);return p?`<p class="note" style="margin:-4px 0 4px;text-align:right"><button class="linkbtn" data-act="my-pin">${p.pin?"Change my PIN":"Set a PIN for "+esc(p.name)}</button></p>`:""})():""}
   ${L().adminPin?`<p class="note" style="margin:-4px 0 8px;text-align:right">${S.isAdmin?`Admin mode on. <button class="linkbtn" data-act="admin-off">Turn off</button>`:`<button class="linkbtn" data-act="admin-on">Admin login</button>`}</p>`:""}
   <nav class="tabs" role="tablist">
-    ${[["weekend","Race weekend"],["standings","League standings"],["f1","F1 standings"],["facts","Race facts"],["setup","League setup"]].map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}
+    ${[["weekend","Race weekend"],["standings","League standings"],["f1","F1 standings"],["facts","Race facts"]].concat(admin()?[["setup","League setup"]]:[]).map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}
   </nav>
   <p class="note">${esc(modeNote)}</p>
   ${S.tab==="weekend"?renderWeekend(race):S.tab==="standings"?renderStandings():S.tab==="f1"?renderF1():S.tab==="facts"?renderFacts():renderSetup()}`;
@@ -789,6 +790,7 @@ function renderSetup(){
   const d=S.setupDraft;const dis=S.canWrite&&admin()?"":"disabled";
   const teamOpts=t=>Object.keys(TEAM_COLORS).concat(Object.keys(TEAM_COLORS).includes(t)||!t?[]:[t]).map(x=>`<option ${x===t?"selected":""}>${esc(x)}</option>`).join("");
   return `<div class="setup" id="setup">
+    ${!L().adminPin?`<div class="panel" style="margin-bottom:20px;border-color:var(--red)"><strong>No admin PIN is set,</strong> so everyone can open League setup and see players’ PINs. Add an Admin PIN below and save to lock this page to you.</div>`:""}
     <section>
       <h3 class="sec">League</h3>
       <div class="cols2">
@@ -882,7 +884,7 @@ app.addEventListener("click",async e=>{
       if(await write("results/"+race.id,cur)){toast("Results removed");S.editing=null;render()}break}
     case "admin-on":{const pin=prompt("Admin PIN");if(pin==null)return;
       if(pin.trim()===String(L().adminPin)){S.isAdmin=true;lsSet(ADMIN_KEY,"1");toast("Admin mode on")}else toast("That PIN doesn’t match");render();break}
-    case "admin-off": S.isAdmin=false;lsSet(ADMIN_KEY,"0");S.setupDraft=null;render();break;
+    case "admin-off": S.isAdmin=false;lsSet(ADMIN_KEY,"0");S.setupDraft=null;if(S.tab==="setup")S.tab="weekend";render();break;
     case "import": await runImport();break;
     case "facts-step":{const rs=races();const i=rs.findIndex(r=>r.id===S.factsRace)+Number(b.dataset.v);if(rs[i]){S.factsRace=rs[i].id;render()}break}
     case "my-pin":{
