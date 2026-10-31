@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Vroom Vroom of Villainy</title>
+<script>try{var t=localStorage.getItem("vvv-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;1,700;1,800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
@@ -47,6 +48,9 @@ header.top{padding:18px 0 10px;display:flex;flex-wrap:wrap;align-items:flex-end;
 .brand h1{font-family:var(--display);font-style:italic;font-weight:800;font-size:clamp(2.2rem,7vw,3.4rem);line-height:.9;margin:0;letter-spacing:-.01em}
 .brand h1 span{display:inline-block;background:var(--red);color:var(--on-red);padding:0 .18em;margin-right:.08em;transform:skewX(-8deg)}
 .brand p{margin:6px 0 0;color:var(--muted);font-size:.95rem}
+.headright{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.themebtn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font-weight:600;font-size:.85rem;white-space:nowrap}
+.themebtn span{font-size:1rem;line-height:1}
 .whoami{display:flex;flex-direction:column;gap:4px;font-size:.85rem;color:var(--muted)}
 .whoami select{min-width:180px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-weight:600;color:var(--ink)}
 
@@ -105,6 +109,10 @@ article.news .meta b{color:var(--red);font-weight:700}
 article.news p{margin:0;font-size:.93rem;color:var(--ink);opacity:.85}
 article.news .also{margin-top:8px;font-size:.8rem;color:var(--muted)}
 article.news .also a{color:var(--muted)}
+.trackmap{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:22px}
+.trackmap svg{display:block;width:100%;height:auto;max-height:420px}
+.trackmap .cap{font-size:.8rem;color:var(--muted);margin-top:8px}
+.trackmap .ph{padding:40px 10px;text-align:center;color:var(--muted);font-size:.9rem}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
 .seg button{border:0;background:none;padding:7px 16px;border-radius:999px;font-weight:600;font-size:.92rem;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
@@ -541,12 +549,15 @@ function render(){
   app.innerHTML=`
   <header class="top">
     <div class="brand"><h1><span>Vroom Vroom</span> of Villainy</h1><p>${esc(L().season||"")} season predictions</p></div>
+    <div class="headright">
+    ${themeButton()}
     <label class="whoami">Picking as
       <select data-act="me">
         <option value="">Just watching</option>
         ${players().map(p=>`<option value="${esc(p.id)}" ${p.id===S.me?"selected":""}>${esc(p.name)}</option>`).join("")}
       </select>
     </label>
+    </div>
   </header>
   ${S.me&&S.canWrite?(()=>{const p=players().find(x=>x.id===S.me);return p?`<p class="note" style="margin:-4px 0 4px;text-align:right"><button class="linkbtn" data-act="my-pin">${p.pin?"Change my PIN":"Set a PIN for "+esc(p.name)}</button></p>`:""})():""}
   ${L().adminPin?`<p class="note" style="margin:-4px 0 8px;text-align:right">${S.isAdmin?`Admin mode on. <button class="linkbtn" data-act="admin-off">Turn off</button>`:`<button class="linkbtn" data-act="admin-on">Admin login</button>`}</p>`:""}
@@ -557,10 +568,16 @@ function render(){
   ${S.tab==="weekend"?renderWeekend(race):S.tab==="standings"?renderStandings():S.tab==="f1"?renderF1():S.tab==="news"?renderNews():renderSetup()}`;
 }
 
+function themeMode(){const t=lsGet("vvv-theme");return t==="light"||t==="dark"?t:"auto"}
+function themeButton(){
+  const m=themeMode();const icon=m==="dark"?"☾":m==="light"?"☀":"◐";const label=m==="dark"?"Dark":m==="light"?"Light":"Auto";
+  return `<button class="themebtn" data-act="theme" aria-label="Theme: ${label}. Tap to change"><span aria-hidden="true">${icon}</span>${label}</button>`;
+}
+function applyTheme(m){if(m==="auto")document.documentElement.removeAttribute("data-theme");else document.documentElement.setAttribute("data-theme",m)}
 function renderStart(){
   const can=S.canWrite;
   if(!can)return `<div class="start"><h2>No league yet</h2><p class="note">The league owner hasn’t set things up yet. Check back once they have.</p></div>`;
-  return `<header class="top"><div class="brand"><h1><span>Vroom Vroom</span> of Villainy</h1><p>Predict the top 5. Score every spot you nail.</p></div></header>
+  return `<header class="top"><div class="brand"><h1><span>Vroom Vroom</span> of Villainy</h1><p>Predict the top 5. Score every spot you nail.</p></div><div class="headright">${themeButton()}</div></header>
   <div class="start panel" id="start">
     <h2>Start your league</h2>
     <p class="note">Add the people playing. You can rename players, tweak scoring, and edit the calendar or driver list later.</p>
@@ -804,6 +821,7 @@ function renderFacts(race){
   return `
   <h2 class="bigsec">About the circuit</h2>
   <div class="stats">${stats.join("")}</div>
+  ${renderTrackMap(race)}
   ${F?`<h3 class="sec">Did you know?</h3><ol class="facts">${F.facts.map(f=>`<li><span>${esc(f)}</span></li>`).join("")}</ol>`:`<p class="note">No fun facts saved for this circuit yet.</p>`}
   ${live}`;
 }
@@ -1022,6 +1040,7 @@ app.addEventListener("click",async e=>{
     case "news-src": N.src=b.dataset.v;N.limit=40;render();break;
     case "news-more": N.limit+=40;render();break;
     case "news-refresh": loadNews(true);break;
+    case "theme":{const order=["auto","light","dark"];const next=order[(order.indexOf(themeMode())+1)%3];lsSet("vvv-theme",next==="auto"?"":next);applyTheme(next);render();break}
     case "f1kind": S.f1.kind=b.dataset.v;render();break;
     case "f1refresh": loadF1Standings(true);break;
     case "fetch-all": b.disabled=true;await fetchAllMissing();break;
@@ -1194,6 +1213,97 @@ async function of1Get(path){
     return res.json();
   }
   throw new Error("rate limited");
+}
+/* ---------- Track maps drawn from OpenF1 car position data ---------- */
+const MAP_KEY="vvv-map-v1-";
+const MAPS={};
+const STOPW=new Set(["grand","prix","circuit","international","the","gp","autodromo","street","city","racing","course","race","track","and"]);
+const toks=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").split(/[^a-z0-9]+/).filter(w=>w.length>2&&!STOPW.has(w));
+async function findTrackSession(race){
+  const now=Date.now();
+  for(const k of ["q","r","s","sq"]){
+    if(!sessionsFor(race).some(s=>s.k===k))continue;
+    try{const s=await of1FindSession(race,k);if(s&&Date.parse(s.date_start)<now-3*3600e3)return s}catch(e){}
+  }
+  const F=factsFor(race)||{};const info=S.factsInfo[race.id]||{};
+  const strong=new Set(toks([F.circuit,info.circuitName,F.place,info.place].join(" ")));
+  const weak=new Set(toks(race.name));
+  const y=+String(race.date).slice(0,4);
+  for(const yy of [y-1,y-2]){
+    const ms=(await of1Get("/meetings?year="+yy))||[];
+    let best=null,score=0;
+    ms.forEach(m=>{if(/test/i.test(m.meeting_name||""))return;
+      const t=toks([m.meeting_name,m.location,m.country_name,m.circuit_short_name].join(" "));
+      const sc=t.reduce((a,w)=>a+(strong.has(w)?2:0)+(weak.has(w)?1:0),0);
+      if(sc>score){score=sc;best=m}});
+    if(best&&score>=2){
+      const ss=(await of1Get("/sessions?meeting_key="+best.meeting_key))||[];
+      const s=ss.find(x=>x.session_name==="Qualifying")||ss.find(x=>x.session_name==="Race");
+      if(s)return s;
+    }
+  }
+  return null;
+}
+async function buildTrack(sess){
+  const res=(await of1Get("/session_result?session_key="+sess.session_key))||[];
+  const order=res.filter(r=>Number.isInteger(r.position)).sort((a,b)=>a.position-b.position).slice(0,3);
+  if(!order.length)throw new Error("no result");
+  for(const r of order){
+    const drv=r.driver_number;
+    const laps=((await of1Get(`/laps?session_key=${sess.session_key}&driver_number=${drv}`))||[])
+      .filter(l=>l.lap_duration&&l.date_start&&!l.is_pit_out_lap).sort((a,b)=>a.lap_duration-b.lap_duration);
+    if(!laps.length)continue;
+    const lap=laps[0];const t0=Date.parse(lap.date_start);const t1=t0+lap.lap_duration*1000+400;
+    const loc=(await of1Get(`/location?session_key=${sess.session_key}&driver_number=${drv}&date>=${encodeURIComponent(new Date(t0).toISOString())}&date<=${encodeURIComponent(new Date(t1).toISOString())}`))||[];
+    let pts=loc.filter(p=>p.x||p.y).map(p=>[Math.round(p.x),Math.round(p.y)]);
+    if(pts.length<60)continue;
+    if(pts.length>420){const step=pts.length/420;pts=[...Array(420).keys()].map(i=>pts[Math.floor(i*step)])}
+    const ac=await of1Acronyms(sess.meeting_key).catch(()=>({}));
+    return {pts,driver:ac[drv]||("#"+drv),lap:lap.lap_duration,session:sess.session_name,year:new Date(sess.date_start).getFullYear(),place:sess.location||""};
+  }
+  throw new Error("no lap");
+}
+async function loadTrackMap(race){
+  if(MAPS[race.id])return;
+  try{const c=JSON.parse(lsGet(MAP_KEY+race.id)||"null");if(c&&c.pts){MAPS[race.id]={data:c};return}}catch(e){}
+  MAPS[race.id]={loading:true};
+  try{
+    const sess=await findTrackSession(race);
+    if(!sess){MAPS[race.id]={error:"none"}}
+    else{const data=await buildTrack(sess);MAPS[race.id]={data};lsSet(MAP_KEY+race.id,JSON.stringify(data))}
+  }catch(e){MAPS[race.id]={error:"fail",at:Date.now()}}
+  if(S.tab==="weekend"&&!S.editing)render();
+}
+function fmtLap(s){const m=Math.floor(s/60);const r=(s-m*60).toFixed(3).padStart(6,"0");return m+":"+r}
+function trackSvg(pts){
+  let minx=Infinity,maxx=-Infinity,miny=Infinity,maxy=-Infinity;
+  pts.forEach(([x,y])=>{if(x<minx)minx=x;if(x>maxx)maxx=x;if(y<miny)miny=y;if(y>maxy)maxy=y});
+  const w=maxx-minx||1,hh=maxy-miny||1;const sc=1000/Math.max(w,hh);const pad=50;
+  const P=([x,y])=>[(x-minx)*sc+pad,(maxy-y)*sc+pad];
+  const sp=pts.map(P);
+  const d=sp.map(([x,y],i)=>(i?"L":"M")+x.toFixed(1)+" "+y.toFixed(1)).join("")+"Z";
+  const W=(w*sc+pad*2).toFixed(0),H=(hh*sc+pad*2).toFixed(0);
+  const [sx,sy]=sp[0];const [ax,ay]=sp[Math.min(12,sp.length-1)];
+  const ang=Math.atan2(ay-sy,ax-sx);const nx=-Math.sin(ang),ny=Math.cos(ang);
+  const [mx,my]=sp[Math.min(30,sp.length-1)];const a2=Math.atan2(sp[Math.min(34,sp.length-1)][1]-my,sp[Math.min(34,sp.length-1)][0]-mx);
+  const tri=[[18,0],[-10,-11],[-10,11]].map(([u,v])=>[mx+u*Math.cos(a2)-v*Math.sin(a2),my+u*Math.sin(a2)+v*Math.cos(a2)].map(n=>n.toFixed(1)).join(",")).join(" ");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Track map">
+    <path d="${d}" fill="none" stroke="var(--ink)" stroke-width="26" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="${d}" fill="none" stroke="var(--surface)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+    <line x1="${(sx-nx*22).toFixed(1)}" y1="${(sy-ny*22).toFixed(1)}" x2="${(sx+nx*22).toFixed(1)}" y2="${(sy+ny*22).toFixed(1)}" stroke="var(--red)" stroke-width="9" stroke-linecap="round"/>
+    <polygon points="${tri}" fill="var(--red)"/>
+  </svg>`;
+}
+function renderTrackMap(race){
+  const m=MAPS[race.id];
+  if(!m||(m.error==="fail"&&Date.now()-m.at>5*60e3)){if(m)delete MAPS[race.id];setTimeout(()=>loadTrackMap(race),0)}
+  let body;
+  if(m&&m.data){const d=m.data;
+    body=trackSvg(d.pts)+`<div class="cap">Drawn from ${esc(d.driver)}’s fastest ${esc(String(d.session).toLowerCase())} lap (${fmtLap(d.lap)}) in ${esc(d.year)}, using OpenF1 car position data. Red line is start/finish; the arrow shows the direction of travel.</div>`}
+  else if(m&&m.error==="none")body=`<div class="ph">No track map yet. This circuit hasn’t been raced in the available data. It’ll appear after its first session.</div>`;
+  else if(m&&m.error)body=`<div class="ph">Couldn’t draw the track map right now. The data service pauses during live sessions, so it’ll try again shortly.</div>`;
+  else body=`<div class="ph">Drawing the track map…</div>`;
+  return `<h3 class="sec">Track map</h3><div class="trackmap">${body}</div>`;
 }
 async function of1Sessions(year){
   if(!of1Cache.sessions[year])of1Cache.sessions[year]=(await of1Get("/sessions?year="+year))||[];
