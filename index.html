@@ -113,6 +113,23 @@ article.news .also a{color:var(--muted)}
 .trackmap svg{display:block;width:100%;height:auto;max-height:420px}
 .trackmap .cap{font-size:.8rem;color:var(--muted);margin-top:8px}
 .trackmap .ph{padding:40px 10px;text-align:center;color:var(--muted);font-size:.9rem}
+.quizwrap{display:grid;gap:18px}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;border-top:5px solid var(--red)}
+.qcard h2{font-family:var(--display);font-style:italic;font-weight:800;font-size:1.9rem;margin:0}
+.qmeta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;color:var(--muted);font-size:.88rem;margin:4px 0 14px}
+.qpts{font-family:var(--display);font-weight:800;font-size:1.25rem;color:var(--red)}
+ol.hints{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px;counter-reset:h}
+ol.hints li{counter-increment:h;display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:start;padding:10px 12px 10px 0;border:1px solid var(--line);border-radius:8px;background:var(--soft)}
+ol.hints li::before{content:counter(h);text-align:center;font-family:var(--display);font-weight:800;font-style:italic;font-size:1.3rem;color:var(--red);line-height:1.1}
+ol.hints li.locked{background:transparent;border-style:dashed;color:var(--muted)}
+.guessrow{display:flex;flex-wrap:wrap;gap:8px}
+.guessrow input{flex:1;min-width:200px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);font-weight:600}
+.wrong{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.wrong span{font-size:.85rem;padding:3px 10px;border-radius:999px;background:var(--soft);color:var(--muted);text-decoration:line-through}
+.reveal{display:flex;align-items:center;gap:12px;padding:14px;border-radius:8px;margin-bottom:14px;background:var(--soft)}
+.reveal i{width:6px;align-self:stretch;border-radius:3px}
+.reveal b{font-family:var(--display);font-size:1.6rem;line-height:1}
+.reveal.win{background:var(--exact-bg)}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
 .seg button{border:0;background:none;padding:7px 16px;border-radius:999px;font-weight:600;font-size:.92rem;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
@@ -298,6 +315,86 @@ const DEFAULT_RACES=[
 /* Official 2026 session start times (UTC). Bahrain-in-Malaysia comes from the F1 data service. */
 const DEFAULT_TIMES={"2026-aus":{"q":"2026-03-07T05:00Z","r":"2026-03-08T04:00Z"},"2026-jpn":{"q":"2026-03-28T06:00Z","r":"2026-03-29T05:00Z"},"2026-mon":{"q":"2026-06-06T14:00Z","r":"2026-06-07T13:00Z"},"2026-bcn":{"q":"2026-06-13T14:00Z","r":"2026-06-14T13:00Z"},"2026-aut":{"q":"2026-06-27T14:00Z","r":"2026-06-28T13:00Z"},"2026-bel":{"q":"2026-07-18T14:00Z","r":"2026-07-19T13:00Z"},"2026-hun":{"q":"2026-07-25T14:00Z","r":"2026-07-26T13:00Z"},"2026-ita":{"q":"2026-09-05T14:00Z","r":"2026-09-06T13:00Z"},"2026-mad":{"q":"2026-09-12T14:00Z","r":"2026-09-13T13:00Z"},"2026-aze":{"q":"2026-09-25T12:00Z","r":"2026-09-26T11:00Z"},"2026-usa":{"q":"2026-10-24T21:00Z","r":"2026-10-25T20:00Z"},"2026-mex":{"q":"2026-10-31T21:00Z","r":"2026-11-01T20:00Z"},"2026-bra":{"q":"2026-11-07T18:00Z","r":"2026-11-08T17:00Z"},"2026-lvg":{"q":"2026-11-21T04:00Z","r":"2026-11-22T04:00Z"},"2026-qat":{"q":"2026-11-28T18:00Z","r":"2026-11-29T16:00Z"},"2026-abu":{"q":"2026-12-05T14:00Z","r":"2026-12-06T13:00Z"},"2026-chn":{"sq":"2026-03-13T07:30Z","s":"2026-03-14T03:00Z","q":"2026-03-14T07:00Z","r":"2026-03-15T07:00Z"},"2026-mia":{"sq":"2026-05-01T20:30Z","s":"2026-05-02T16:00Z","q":"2026-05-02T20:00Z","r":"2026-05-03T20:00Z"},"2026-can":{"sq":"2026-05-22T20:30Z","s":"2026-05-23T16:00Z","q":"2026-05-23T20:00Z","r":"2026-05-24T20:00Z"},"2026-gbr":{"sq":"2026-07-03T15:30Z","s":"2026-07-04T11:00Z","q":"2026-07-04T15:00Z","r":"2026-07-05T14:00Z"},"2026-ned":{"sq":"2026-08-21T14:30Z","s":"2026-08-22T10:00Z","q":"2026-08-22T14:00Z","r":"2026-08-23T13:00Z"},"2026-sgp":{"sq":"2026-10-09T12:30Z","s":"2026-10-10T09:00Z","q":"2026-10-10T13:00Z","r":"2026-10-11T12:00Z"}};
 const OF1_TIMES={};
+
+const HIST_DRIVERS={
+"x-farina":{name:"Nino Farina",nat:"Italian",years:"1950–1955",h:["I won the very first World Championship Grand Prix, at Silverstone in 1950.","I was known for driving with my arms stretched out straight, a style others later copied.","I held a university doctorate, so I was often called “Dottore”."],h5:"I was the first ever Formula 1 world champion, in 1950 with Alfa Romeo."},
+"x-fangio":{name:"Juan Manuel Fangio",nat:"Argentine",years:"1950–1958",h:["My nickname, “El Chueco”, referred to my bow legs.","My final title came in 1957, after a legendary comeback drive at the Nürburgring when I was 46.","I won world titles with four different manufacturers."],h5:"I won five world titles, a record that stood for 46 years."},
+"x-ascari":{name:"Alberto Ascari",nat:"Italian",years:"1950–1955",h:["In 1955 I crashed into the harbour at Monaco and swam out.","Days later, I was killed testing a sports car at Monza, aged 36, the same age my father was when he died racing.","I won nine consecutive championship Grands Prix across 1952 and 1953."],h5:"I won back-to-back world titles with Ferrari in 1952 and 1953."},
+"x-hawthorn":{name:"Mike Hawthorn",nat:"British",years:"1952–1958",h:["I often raced wearing a bow tie.","I won my title by a single point, then retired straight away.","I died in a road accident just months after becoming champion."],h5:"I was Britain’s first world champion, with Ferrari in 1958."},
+"x-moss":{name:"Stirling Moss",nat:"British",years:"1951–1961",h:["I won the 1955 Mille Miglia road race in record time.","I finished runner-up in the championship four years in a row.","I’m often called the greatest driver never to win the world title."],h5:"I won 16 Grands Prix, for teams including Mercedes, Vanwall and Rob Walker’s private Lotus."},
+"x-phill":{name:"Phil Hill",nat:"American",years:"1958–1966",h:["I won the 24 Hours of Le Mans three times.","I clinched my title at Monza on the day my teammate was killed in a crash there.","After racing, I became a respected restorer of classic cars."],h5:"I became the first American Formula 1 world champion, with Ferrari in 1961."},
+"x-brabham":{name:"Jack Brabham",nat:"Australian",years:"1955–1970",h:["I once pushed my car across the finish line to secure a championship.","I won back-to-back titles with Cooper in 1959 and 1960.","I’m the only driver to win the world title in a car bearing my own name."],h5:"I won three world titles, the last in 1966 in my own Brabham."},
+"x-ghill":{name:"Graham Hill",nat:"British",years:"1958–1975",h:["I didn’t pass my driving test until I was 24.","I won the Monaco Grand Prix five times, earning the nickname “Mr Monaco”.","I’m the only driver to win the Triple Crown: Monaco, the Indy 500 and Le Mans."],h5:"I won world titles in 1962 with BRM and 1968 with Lotus, and my son became champion too."},
+"x-clark":{name:"Jim Clark",nat:"British",years:"1960–1968",h:["I was a sheep farmer from the Scottish Borders.","In 1965 I won the Indianapolis 500 as well as the world title.","I was killed in a Formula 2 race at Hockenheim in 1968."],h5:"I won two world titles with Lotus, in 1963 and 1965."},
+"x-surtees":{name:"John Surtees",nat:"British",years:"1960–1972",h:["I won seven motorcycle world titles before switching to cars.","I later ran my own Formula 1 team.","I’m the only person to be world champion on both two wheels and four."],h5:"I won the 1964 Formula 1 world title with Ferrari."},
+"x-mclaren":{name:"Bruce McLaren",nat:"New Zealander",years:"1958–1970",h:["I won the 1959 United States Grand Prix aged 22, a youngest-winner record that stood until 2003.","I was killed testing one of my own sports cars at Goodwood in 1970.","My name lives on in one of F1’s most famous teams."],h5:"I founded the McLaren team."},
+"x-hulme":{name:"Denny Hulme",nat:"New Zealander",years:"1965–1974",h:["My gruff manner earned me the nickname “The Bear”.","I beat my own team boss to the title.","My father won the Victoria Cross in World War II."],h5:"I won the 1967 world title driving for Brabham."},
+"x-stewart":{name:"Jackie Stewart",nat:"British",years:"1965–1973",h:["I was a top clay-pigeon shooter and narrowly missed the 1960 Olympics.","I campaigned hard for safety after a crash at Spa left me trapped in my car.","I retired before what would have been my 100th Grand Prix."],h5:"I won three world titles, with Matra in 1969 and Tyrrell in 1971 and 1973."},
+"x-rindt":{name:"Jochen Rindt",nat:"Austrian",years:"1964–1970",h:["I was born in Germany but raced under the Austrian flag.","I won the 1965 24 Hours of Le Mans.","I’m the only driver to be crowned world champion after my death."],h5:"I won the 1970 world title with Lotus."},
+"x-ickx":{name:"Jacky Ickx",nat:"Belgian",years:"1966–1979",h:["I walked across the track instead of running at the start of Le Mans in 1969, in protest at the unsafe start, and still won.","I won the 24 Hours of Le Mans six times.","I won the Paris–Dakar Rally in 1983."],h5:"I won eight Grands Prix and was twice title runner-up with Ferrari and Brabham."},
+"x-fittipaldi":{name:"Emerson Fittipaldi",nat:"Brazilian",years:"1970–1980",h:["I later won the Indianapolis 500 twice.","I set up my own Formula 1 team with my brother.","I became the youngest world champion at the time, aged 25."],h5:"I won world titles with Lotus in 1972 and McLaren in 1974."},
+"x-peterson":{name:"Ronnie Peterson",nat:"Swedish",years:"1970–1978",h:["I was nicknamed “SuperSwede”.","I drove the six-wheeled Tyrrell in 1977.","I died after a start-line crash at Monza in 1978, while runner-up in the championship."],h5:"I won ten Grands Prix, mostly with Lotus."},
+"x-lauda":{name:"Niki Lauda",nat:"Austrian",years:"1971–1979, 1982–1985",h:["I founded my own airline and flew its planes myself.","I returned to racing just six weeks after a fiery crash at the Nürburgring.","I won my third title by just half a point over my own teammate."],h5:"I won three world titles: 1975 and 1977 with Ferrari, and 1984 with McLaren."},
+"x-hunt":{name:"James Hunt",nat:"British",years:"1973–1979",h:["Early in my career I was nicknamed “Hunt the Shunt”.","I started out with the Hesketh team, run by an English lord.","After retiring I became a much-loved BBC commentator."],h5:"I won the 1976 world title with McLaren, by a single point."},
+"x-scheckter":{name:"Jody Scheckter",nat:"South African",years:"1972–1980",h:["I triggered a huge pile-up at Silverstone in 1973.","I won a race in a six-wheeled car, the Tyrrell P34, in Sweden in 1976.","After racing, I became an organic farmer in England."],h5:"I won the 1979 world title with Ferrari."},
+"x-andretti":{name:"Mario Andretti",nat:"American",years:"1968–1982",h:["I was born in Italy, in a town that is now part of Croatia.","I won the Indianapolis 500 in 1969 and the Daytona 500 in 1967.","My grandson raced in IndyCar, and my family name is a racing dynasty."],h5:"I won the 1978 world title with Lotus."},
+"x-gvilleneuve":{name:"Gilles Villeneuve",nat:"Canadian",years:"1977–1982",h:["I first made my name racing snowmobiles.","I was killed during qualifying at Zolder in 1982.","The circuit in Montreal is named after me."],h5:"I won six Grands Prix, all with Ferrari."},
+"x-jones":{name:"Alan Jones",nat:"Australian",years:"1975–1981, 1983, 1985–1986",h:["My father was also a racing driver in Australia.","I won Williams’ first-ever world championship.","I was famously blunt and tough, both on and off the track."],h5:"I won the 1980 world title with Williams."},
+"x-krosberg":{name:"Keke Rosberg",nat:"Finnish",years:"1978–1986",h:["I won my world title with just one race victory that season.","In 1985 I set a qualifying lap at Silverstone averaging over 160 mph, a record for years.","My son later became world champion too."],h5:"I won the 1982 world title with Williams."},
+"x-piquet":{name:"Nelson Piquet",nat:"Brazilian",years:"1978–1991",h:["I used my mother’s maiden name early on so my father wouldn’t find out I was racing.","I won two of my titles with Brabham.","My son later raced in F1 too."],h5:"I won three world titles: 1981 and 1983 with Brabham, and 1987 with Williams."},
+"x-prost":{name:"Alain Prost",nat:"French",years:"1980–1991, 1993",h:["My calculating style earned me the nickname “The Professor”.","I took a year off in 1992, then came back and won the title.","My rivalry with my McLaren teammate is one of the most famous in the sport."],h5:"I won four world titles, three with McLaren and one with Williams."},
+"x-mansell":{name:"Nigel Mansell",nat:"British",years:"1980–1992, 1994–1995",h:["I once collapsed while pushing my car to the finish in Dallas.","Ferrari fans called me “Il Leone”, the lion.","After winning the F1 title, I won the IndyCar title as a rookie the following year."],h5:"I won the 1992 world title with Williams."},
+"x-berger":{name:"Gerhard Berger",nat:"Austrian",years:"1984–1997",h:["I survived a fiery crash at Imola’s Tamburello corner in 1989.","I was famous for playing pranks on my teammate, Ayrton Senna.","I won ten Grands Prix, including Ferrari’s first win after Enzo Ferrari’s death."],h5:"I raced for Ferrari, McLaren and Benetton, and later co-owned Toro Rosso."},
+"x-senna":{name:"Ayrton Senna",nat:"Brazilian",years:"1984–1994",h:["My first podium came in the rain at Monaco in 1984, with the small Toleman team.","I won the Monaco Grand Prix six times, five of them in a row.","I was killed at Imola in 1994."],h5:"I won three world titles with McLaren, in 1988, 1990 and 1991."},
+"x-alesi":{name:"Jean Alesi",nat:"French",years:"1989–2001",h:["I have Sicilian heritage and a passionate driving style.","I famously turned down Williams to join Ferrari.","My only Grand Prix win came in Canada in 1995, on my birthday."],h5:"I raced for Tyrrell, Ferrari, Benetton, Sauber, Prost and Jordan."},
+"x-hakkinen":{name:"Mika Häkkinen",nat:"Finnish",years:"1991–2001",h:["A crash in Adelaide in 1995 nearly ended my life.","I was one of the “Flying Finns”.","My rivalry with Michael Schumacher defined the late 1990s."],h5:"I won back-to-back world titles with McLaren in 1998 and 1999."},
+"x-schumacher":{name:"Michael Schumacher",nat:"German",years:"1991–2006, 2010–2012",h:["I made my debut at Spa in 1991, replacing a driver who was in jail.","I won my first two titles with Benetton.","I came out of retirement to race for Mercedes."],h5:"I won seven world titles, five of them in a row with Ferrari."},
+"x-dhill":{name:"Damon Hill",nat:"British",years:"1992–1999",h:["I started out racing motorbikes.","I gave the Jordan team its first ever win, at Spa in 1998.","My father was a two-time world champion."],h5:"I won the 1996 world title with Williams."},
+"x-coulthard":{name:"David Coulthard",nat:"British",years:"1994–2008",h:["I was promoted to a race seat in 1994 after the death of Ayrton Senna.","I celebrated a podium at Monaco in 2006 wearing a Superman cape.","I won 13 Grands Prix, most of them with McLaren."],h5:"I’m Scottish, and I scored Red Bull Racing’s first podium."},
+"x-irvine":{name:"Eddie Irvine",nat:"British",years:"1993–2002",h:["On my debut in Japan in 1993, Ayrton Senna punched me after the race.","I’m from Northern Ireland.","I came within a few points of the title in 1999, standing in as Ferrari’s team leader."],h5:"I won four Grands Prix, all with Ferrari."},
+"x-jvilleneuve":{name:"Jacques Villeneuve",nat:"Canadian",years:"1996–2006",h:["I won the Indianapolis 500 and the IndyCar title before coming to F1.","I finished second in the championship as a rookie.","My father was a Ferrari legend."],h5:"I won the 1997 world title with Williams."},
+"x-trulli":{name:"Jarno Trulli",nat:"Italian",years:"1997–2011",h:["Drivers stuck behind me in races coined the phrase “Trulli train”.","I was famous for my one-lap qualifying speed.","My only Grand Prix win came at Monaco in 2004."],h5:"I raced for Renault, Toyota, Jordan and Lotus, among others."},
+"x-fisichella":{name:"Giancarlo Fisichella",nat:"Italian",years:"1996–2009",h:["My first win was only confirmed days after the race, when the results were corrected.","That win, in Brazil in 2003, came with Jordan.","I briefly raced for Ferrari in 2009."],h5:"I won three Grands Prix, the others with Renault."},
+"x-barrichello":{name:"Rubens Barrichello",nat:"Brazilian",years:"1993–2011",h:["In Austria in 2002 I was ordered to let my teammate win on the final straight.","I once held the record for the most Grand Prix starts.","I won races for Ferrari and Brawn GP."],h5:"I was Michael Schumacher’s teammate at Ferrari from 2000 to 2005."},
+"x-montoya":{name:"Juan Pablo Montoya",nat:"Colombian",years:"2001–2006",h:["I won the Indianapolis 500 on my first attempt, in 2000, and again in 2015.","I set one of the fastest laps in F1 history at Monza in 2004.","I left F1 mid-season in 2006 to race in NASCAR."],h5:"I won seven Grands Prix, with Williams and McLaren."},
+"x-raikkonen":{name:"Kimi Räikkönen",nat:"Finnish",years:"2001–2009, 2012–2021",h:["I reached F1 after only 23 car races.","I was nicknamed “The Iceman”.","I once told my engineer “Leave me alone, I know what I’m doing” over the radio."],h5:"I won the 2007 world title with Ferrari."},
+"x-webber":{name:"Mark Webber",nat:"Australian",years:"2002–2013",h:["I scored points on my debut, at my home race, with Minardi.","After winning at Silverstone in 2010, I said “Not bad for a number two driver”.","I later raced at Le Mans with Porsche and won the World Endurance title."],h5:"I won nine Grands Prix with Red Bull."},
+"x-massa":{name:"Felipe Massa",nat:"Brazilian",years:"2002–2017",h:["I lost the 2008 title by a single point at my home race.","In 2009 I was hit on the helmet by a loose spring in Hungary.","I spent eight seasons at Ferrari, then moved to Williams."],h5:"I won eleven Grands Prix, all with Ferrari."},
+"x-button":{name:"Jenson Button",nat:"British",years:"2000–2017",h:["I won the 2011 Canadian Grand Prix after dropping to last, in the longest race in F1 history.","I made my debut with Williams in 2000.","I won my title with a team that had been rescued just before the season started."],h5:"I won the 2009 world title with Brawn GP."},
+"x-kubica":{name:"Robert Kubica",nat:"Polish",years:"2006–2010, 2019, 2021",h:["I was the first driver from my country to race in F1.","A rally crash in 2011 badly injured my arm, but I returned to F1 eight years later.","My only win came in Canada in 2008, a year after a huge crash there."],h5:"I won that race driving for BMW Sauber."},
+"x-sato":{name:"Takuma Sato",nat:"Japanese",years:"2002–2008",h:["I scored a podium at the 2004 United States Grand Prix.","I raced for Jordan, BAR and Super Aguri.","I later won the Indianapolis 500 twice."],h5:"I’m one of the most successful Japanese drivers in racing history."},
+"x-nrosberg":{name:"Nico Rosberg",nat:"German",years:"2006–2016",h:["I grew up in Monaco and speak several languages.","My father was the 1982 world champion.","I retired just five days after winning my title."],h5:"I won the 2016 world title with Mercedes, beating Lewis Hamilton."},
+"x-vettel":{name:"Sebastian Vettel",nat:"German",years:"2007–2022",h:["I gave every one of my cars a name.","I won for Toro Rosso at Monza in 2008, becoming the youngest Grand Prix winner at the time.","I won four titles in a row."],h5:"I won four world titles with Red Bull, from 2010 to 2013, and later raced for Ferrari and Aston Martin."},
+"x-ricciardo":{name:"Daniel Ricciardo",nat:"Australian",years:"2011–2024",h:["I made drinking champagne from a racing boot, the “shoey”, famous on the podium.","I won Monaco in 2018 despite losing a big chunk of engine power.","I won eight Grands Prix, the last for McLaren at Monza in 2021."],h5:"I’m best known for my years at Red Bull Racing and my huge smile."},
+"x-grosjean":{name:"Romain Grosjean",nat:"French",years:"2009, 2012–2020",h:["I raced under the French flag, but I was born in Switzerland.","I escaped a car that split in two and caught fire in Bahrain in 2020.","I scored ten podiums with Lotus."],h5:"I spent my last five F1 seasons with Haas."},
+"x-magnussen":{name:"Kevin Magnussen",nat:"Danish",years:"2014–2024",h:["I finished on the podium in my very first Grand Prix.","My father also raced in Formula 1.","I took a surprise pole position for Haas in Brazil in 2022."],h5:"I raced for McLaren, Renault and, mostly, Haas."}
+};
+
+const DRIVER_HINTS={
+NOR:{nat:"British",h:["My mother is Belgian, and I was born in Bristol.","I founded a lifestyle and gaming brand called Quadrant.","I’ve spent my whole F1 career, which began in 2019, with one team."]},
+PIA:{nat:"Australian",h:["I won the Formula 3 and Formula 2 titles in back-to-back rookie seasons.","In 2022, a contract dispute over my services went all the way to F1’s Contract Recognition Board.","I was born in Melbourne in 2001 and made my F1 debut in 2023."]},
+LEC:{nat:"Monegasque",h:["I won GP3 and Formula 2 in consecutive years before reaching F1.","My F1 debut came in 2018 with Sauber.","In 2024 I finally won my home Grand Prix, the one held through the streets where I grew up."]},
+HAM:{nat:"British",h:["I made my F1 debut in 2007 and nearly won the title as a rookie.","I hold the records for most Grand Prix wins and most pole positions.","I have seven world titles and moved to Ferrari in 2025."]},
+VER:{nat:"Dutch",h:["My father also raced in Formula 1.","I started my first Grand Prix aged 17, before I could legally drive a road car at home.","I became the youngest Grand Prix winner ever, at 18, in Spain in 2016."]},
+HAD:{nat:"French",h:["I was born in Paris in 2004 and have Algerian heritage.","Some people nicknamed me “le petit Prost”.","I was runner-up in Formula 2 in 2024 and made my F1 debut in 2025."]},
+RUS:{nat:"British",h:["I won the Formula 2 title as a rookie in 2018.","At my first team, my qualifying form earned me the nickname “Mr Saturday”.","I scored my first Grand Prix win in Brazil in 2022."]},
+ANT:{nat:"Italian",h:["I skipped Formula 3 and jumped straight from Formula Regional to Formula 2.","I was born in Bologna in 2006.","In 2025 I took over the seat of a seven-time world champion."]},
+ALO:{nat:"Spanish",h:["I made my F1 debut with Minardi in 2001.","I’ve won the 24 Hours of Le Mans twice.","I won back-to-back world titles with Renault in 2005 and 2006, and I hold the record for most Grand Prix starts."]},
+STR:{nat:"Canadian",h:["I took a pole position in the wet in Turkey in 2020.","I scored a podium in Baku in my rookie season, 2017.","I was born in Montreal, and my father owns my team."]},
+GAS:{nat:"French",h:["I won the GP2 title in 2016.","I was promoted to a top team in 2019, then moved back to its junior team mid-season.","I won a dramatic Italian Grand Prix at Monza in 2020."]},
+COL:{nat:"Argentine",h:["I became my country’s first F1 driver in over two decades.","I made my debut mid-season in 2024 at Monza, with Williams.","I was born near Buenos Aires in 2003 and moved to Alpine in 2025."]},
+ALB:{nat:"Thai",h:["I was born in London, but I race under another country’s flag.","My father raced in the British Touring Car Championship.","I debuted with Toro Rosso in 2019, was promoted to Red Bull that same year, and have raced for Williams since 2022."]},
+SAI:{nat:"Spanish",h:["My father is a two-time World Rally champion and a Dakar winner.","My first Grand Prix win came at Silverstone in 2022.","I was born in Madrid, raced for Ferrari, and joined Williams in 2025."]},
+LAW:{nat:"New Zealander",h:["I made my F1 debut in 2023 as a mid-season stand-in for an injured driver.","I was promoted to Red Bull Racing for 2025, but swapped back after just two races.","I come from Hastings, New Zealand."]},
+LIN:{nat:"British",h:["I was born in 2007 and am the only full-time rookie on the 2026 grid.","I came up through the Red Bull junior programme.","I have a Swedish surname but race with a British licence."]},
+HUL:{nat:"German",h:["I took a pole position in my rookie season, in Brazil in 2010.","I won the 24 Hours of Le Mans with Porsche in 2015.","After more than 200 starts, I finally scored my first F1 podium at Silverstone in 2025."]},
+BOR:{nat:"Brazilian",h:["I won the Formula 3 and Formula 2 titles in back-to-back seasons.","My career is managed by a two-time world champion’s management company.","I was born in São Paulo state in 2004 and debuted with Sauber in 2025."]},
+OCO:{nat:"French",h:["I beat Max Verstappen to a junior Formula 3 title in 2014.","I made my F1 debut with Manor in 2016.","My only Grand Prix win came in Hungary in 2021, with Alpine."]},
+BEA:{nat:"British",h:["I made my F1 debut as a last-minute stand-in for an ill driver and scored points.","That debut came with Ferrari, in Saudi Arabia in 2024.","I was born in Chelmsford in 2005 and race full-time for Haas."]},
+PER:{nat:"Mexican",h:["My first Grand Prix win came in Sakhir in 2020, after dropping to last on the opening lap.","I won the Monaco Grand Prix in 2022.","I’m nicknamed “Checo” and returned to F1 with Cadillac in 2026."]},
+BOT:{nat:"Finnish",h:["I once opened a team radio message with “To whom it may concern”.","I won ten Grands Prix and was Lewis Hamilton’s teammate from 2017 to 2021.","I spent 2025 as Mercedes’ reserve driver before joining Cadillac."]}
+};
+
 const FACTS={
 aus:{circuit:"Albert Park Circuit",place:"Melbourne, Australia",km:5.278,laps:58,facts:[
 "The track loops around a lake in a public park, using roads that are open to everyday traffic for the rest of the year.",
@@ -405,7 +502,7 @@ const LS_KEY="vvv-local-v1", ME_KEY="vvv-me", ADMIN_KEY="vvv-admin";
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 
-const S={mode:"loading",league:null,picks:{},results:{},canWrite:true,me:lsGet(ME_KEY),
+const S={mode:"loading",league:null,picks:{},results:{},quiz:{},quizGuess:"",canWrite:true,me:lsGet(ME_KEY),
   tab:"weekend",factsRace:null,factsInfo:{},f1:{kind:"drivers",data:null,loading:false,error:null},raceId:null,session:null,editing:null,draft:[],setupDraft:null,setupDirty:false,newPlayers:["","","",""],newSeason:"2026"};
 let db=null;
 
@@ -418,8 +515,8 @@ let toastT;
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),Math.max(2200,msg.length*60))}
 
 /* ---------- storage ---------- */
-function saveLocal(){lsSet(LS_KEY,JSON.stringify({league:S.league,picks:S.picks,results:S.results}))}
-function loadLocal(){const raw=lsGet(LS_KEY);if(!raw)return;try{const o=JSON.parse(raw);S.league=o.league||null;S.picks=o.picks||{};S.results=o.results||{}}catch(e){}}
+function saveLocal(){lsSet(LS_KEY,JSON.stringify({league:S.league,picks:S.picks,results:S.results,quiz:S.quiz}))}
+function loadLocal(){const raw=lsGet(LS_KEY);if(!raw)return;try{const o=JSON.parse(raw);S.league=o.league||null;S.picks=o.picks||{};S.results=o.results||{};S.quiz=o.quiz||{}}catch(e){}}
 async function write(path,data){
   if(db){
     try{await db.doc(path).set(data);return true}
@@ -430,7 +527,7 @@ async function write(path,data){
     }
   }
   const [col,id]=path.split("/");
-  if(col==="league")S.league=data;else if(col==="picks")S.picks[id]=data;else if(col==="results")S.results[id]=data;
+  if(col==="league")S.league=data;else if(col==="picks")S.picks[id]=data;else if(col==="results")S.results[id]=data;else if(col==="quiz")S.quiz[id]=data;
   saveLocal();render();return true;
 }
 
@@ -562,10 +659,10 @@ function render(){
   ${S.me&&S.canWrite?(()=>{const p=players().find(x=>x.id===S.me);return p?`<p class="note" style="margin:-4px 0 4px;text-align:right"><button class="linkbtn" data-act="my-pin">${p.pin?"Change my PIN":"Set a PIN for "+esc(p.name)}</button></p>`:""})():""}
   ${L().adminPin?`<p class="note" style="margin:-4px 0 8px;text-align:right">${S.isAdmin?`Admin mode on. <button class="linkbtn" data-act="admin-off">Turn off</button>`:`<button class="linkbtn" data-act="admin-on">Admin login</button>`}</p>`:""}
   <nav class="tabs" role="tablist">
-    ${[["news","F1 news"],["f1","F1 standings"],["standings","League standings"],["weekend","Race weekend"]].concat(admin()?[["setup","League setup"]]:[]).map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}
+    ${[["news","F1 news"],["f1","F1 standings"],["standings","League standings"],["weekend","Race weekend"],["quiz","Driver quiz"]].concat(admin()?[["setup","League setup"]]:[]).map(([k,l])=>`<button role="tab" aria-selected="${S.tab===k}" data-act="tab" data-v="${k}">${l}</button>`).join("")}
   </nav>
   <p class="note">${esc(modeNote)}</p>
-  ${S.tab==="weekend"?renderWeekend(race):S.tab==="standings"?renderStandings():S.tab==="f1"?renderF1():S.tab==="news"?renderNews():renderSetup()}`;
+  ${S.tab==="weekend"?renderWeekend(race):S.tab==="standings"?renderStandings():S.tab==="f1"?renderF1():S.tab==="news"?renderNews():S.tab==="quiz"?renderQuiz():renderSetup()}`;
 }
 
 function themeMode(){const t=lsGet("vvv-theme");return t==="light"||t==="dark"?t:"auto"}
@@ -685,15 +782,17 @@ function renderPicker(race,sess){
 function renderStandings(){
   const ps=players();const rs=races();
   const scored=rs.filter(raceHasAnyResult);
+  const withQuiz=!!(L().quiz&&L().quiz.inLeague);
   const rows=ps.map(p=>{let tot=0,ex=0;const per={};
     scored.forEach(r=>{const s=raceScore(r,p.id);per[r.id]=s.pts;tot+=s.pts;ex+=s.exact});
-    return {p,tot,ex,per,last:scored.length?per[scored[scored.length-1].id]:0};
+    const qp=withQuiz?quizTotals()[p.id].pts:0;tot+=qp;
+    return {p,tot,ex,per,qp,last:scored.length?per[scored[scored.length-1].id]:0};
   }).sort((a,b)=>b.tot-a.tot||b.ex-a.ex);
   const lead=rows[0]?rows[0].tot:0;
   let pos=0,prev=null;
   const tower=rows.map((r,i)=>{if(prev===null||r.tot!==prev.tot||r.ex!==prev.ex)pos=i+1;prev=r;
     return `<div class="row ${pos===1&&r.tot>0?"lead":""}"><div class="posn">${pos}</div><div class="bar" style="background:${playerColor(r.p.id)}"></div>
-      <div class="nm">${esc(r.p.name)}<small>${r.ex} exact hit${r.ex===1?"":"s"}${scored.length?`, last weekend +${r.last}`:""}</small></div>
+      <div class="nm">${esc(r.p.name)}<small>${r.ex} exact hit${r.ex===1?"":"s"}${withQuiz&&r.qp?`, ${r.qp} from the quiz`:""}${scored.length?`, last weekend +${r.last}`:""}</small></div>
       <div class="gap">${i===0?(r.tot>0?"Leader":""):(lead-r.tot?"−"+(lead-r.tot):"Tied")}</div>
       <div class="tot">${r.tot}</div></div>`}).join("");
   const breakdown=scored.length?`<h3 class="sec">Weekend by weekend</h3>
@@ -722,7 +821,7 @@ async function loadF1Standings(force){
     const dl=d.MRData.StandingsTable.StandingsLists[0];const cl=c.MRData.StandingsTable.StandingsLists[0];
     if(!dl)throw new Error("empty");
     f.data={season:dl.season,round:+dl.round,
-      drivers:dl.DriverStandings.map(x=>{const t=(x.Constructors||[]).slice(-1)[0]||{};return {pos:x.positionText||x.position,pts:+x.points,wins:+x.wins,code:x.Driver.code||"",name:(x.Driver.givenName+" "+x.Driver.familyName).trim(),team:t.name||"",teamId:t.constructorId||""}}),
+      drivers:dl.DriverStandings.map(x=>{const t=(x.Constructors||[]).slice(-1)[0]||{};return {num:x.Driver.permanentNumber||"",pos:x.positionText||x.position,pts:+x.points,wins:+x.wins,code:x.Driver.code||"",name:(x.Driver.givenName+" "+x.Driver.familyName).trim(),team:t.name||"",teamId:t.constructorId||""}}),
       teams:cl?cl.ConstructorStandings.map(x=>({pos:x.positionText||x.position,pts:+x.points,wins:+x.wins,name:x.Constructor.name,id:x.Constructor.constructorId})):[]};
     f.fetched=Date.now();
   }catch(e){f.error="Couldn’t load the championship standings right now. Try again in a bit."}
@@ -920,6 +1019,96 @@ function renderNews(){
     <div class="newslist" id="newslist">${renderNewsList()}</div>
     <p class="note" style="margin-top:16px">Headlines and short summaries come from each publisher’s public news feed. Tap a headline to read the full story on their site.${N.at?` Updated ${esc(fmtAgo(N.at))}.`:""}${N.failed.length?` Couldn’t load: ${esc(N.failed.join(", "))}.`:""}</p>`;
 }
+/* ---------- Driver of the day quiz ---------- */
+const QUIZ_TZ="America/Chicago";
+const quizDate=(ms)=>new Date(ms||Date.now()).toLocaleDateString("en-CA",{timeZone:QUIZ_TZ});
+function quizPool(){const codes=(L().drivers||[]).map(d=>d.c).filter(c=>DRIVER_HINTS[c]);return (codes.length?codes:Object.keys(DRIVER_HINTS)).concat(Object.keys(HIST_DRIVERS))}
+const quizName=c=>HIST_DRIVERS[c]?HIST_DRIVERS[c].name:driver(c).n;
+const normName=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z ]/g,"").replace(/\s+/g," ").trim();
+const surname=n=>String(n).split(" ").slice(-1)[0];
+function seededShuffle(arr,seed){const a=arr.slice();let s=hashStr(seed);for(let i=a.length-1;i>0;i--){s=Math.imul(s^(s>>>15),2246822519)>>>0;s=(s^(s>>>13))>>>0;const j=s%(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function quizRaw(pool,day){return seededShuffle(pool,"vvv-quiz-"+Math.floor(day/pool.length))[day%pool.length]}
+function quizAnswer(date){
+  const pool=quizPool().slice().sort();
+  const day=Math.floor(Date.parse(date+"T12:00:00Z")/864e5);
+  const a=quizRaw(pool,day);
+  if(day%pool.length===0){const recent=new Set([1,2,3,4,5].map(k=>quizRaw(pool,day-k)));if(recent.has(a)){const sh=seededShuffle(pool,"vvv-quiz-"+Math.floor(day/pool.length));return sh.find(c=>!recent.has(c))||a}}
+  return a;
+}
+function quizHints(code){
+  const X=HIST_DRIVERS[code];
+  if(X)return [X.h[0],X.h[1],X.h[2],`I’m ${X.nat}. My Formula 1 career: ${X.years}.`,X.h5];
+  const H=DRIVER_HINTS[code];const d=driver(code);
+  const st=S.f1.data&&S.f1.data.drivers.find(x=>x.code===code);
+  const h4=`I’m ${H.nat}.`+(st?` I’m currently P${st.pos} in the championship with ${fmtPts(st.pts)} points.`:"");
+  const team=(st&&st.team)||d.t;const num=st&&st.num;
+  const h5=`I drive for ${team}`+(num?` in car #${num}.`:".");
+  return [H.h[0],H.h[1],H.h[2],h4,h5];
+}
+const quizKey=(date,pid)=>date+"__"+pid;
+function quizTotals(){
+  const t={};players().forEach(p=>t[p.id]={pts:0,played:0,perfect:0,streak:0});
+  const byP={};
+  Object.values(S.quiz).forEach(q=>{if(!q||!q.done||!t[q.playerId])return;const x=t[q.playerId];x.pts+=Number(q.pts)||0;x.played++;if(q.pts===3)x.perfect++;(byP[q.playerId]=byP[q.playerId]||[]).push(q)});
+  const today=quizDate();
+  Object.entries(byP).forEach(([pid,list])=>{
+    const solved=new Set(list.filter(q=>q.solved).map(q=>q.date));let n=0;let d=new Date(today+"T12:00:00Z");
+    if(!solved.has(today))d=new Date(d.getTime()-864e5);
+    while(solved.has(d.toISOString().slice(0,10))){n++;d=new Date(d.getTime()-864e5)}
+    t[pid].streak=n;
+  });
+  return t;
+}
+async function saveQuiz(doc){doc.updated=Date.now();if(await write("quiz/"+quizKey(doc.date,doc.playerId),doc)){S.quiz[quizKey(doc.date,doc.playerId)]=doc;render()}}
+function renderQuiz(){
+  if(!S.f1.data&&!S.f1.loading)setTimeout(()=>loadF1Standings(false),0);
+  const date=quizDate();const ans=quizAnswer(date);const hints=quizHints(ans);
+  const me=players().find(p=>p.id===S.me);
+  const q=me?(S.quiz[quizKey(date,me.id)]||{date,playerId:me.id,hints:3,guesses:[],solved:false,done:false,pts:0}):null;
+  const shown=q?q.hints:3;const avail=Math.max(0,6-shown);
+  const prettyDate=new Date(date+"T12:00:00Z").toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",timeZone:"UTC"});
+  let card;
+  if(!me){
+    card=`<div class="qcard"><h2>Driver of the day</h2><div class="qmeta">${esc(prettyDate)}</div><p>Choose your name in <b>Picking as</b> at the top to play today’s quiz.</p></div>`;
+  }else{
+    const ansColor=HIST_DRIVERS[ans]?"var(--red)":teamColor(driver(ans).t);
+    const reveal=q.done?`<div class="reveal ${q.solved?"win":""}"><i style="background:${ansColor}"></i><div><div style="font-size:.85rem;color:var(--muted)">${q.solved?"You got it!":"Today’s driver was"}</div><b>${esc(quizName(ans))}</b></div><div style="margin-left:auto" class="qpts">+${q.pts}</div></div>`:"";
+    const list=hints.map((t,i)=>i<(q.done?5:shown)?`<li><span>${esc(t)}</span></li>`:`<li class="locked"><span>Hint ${i+1} is locked. Revealing it costs a point.</span></li>`).join("");
+    const names=quizPool().map(quizName).sort((a,b)=>surname(a).localeCompare(surname(b))||a.localeCompare(b));
+    const controls=q.done?"":`<div class="guessrow">
+        <input list="quiznames" data-act="quiz-pick" placeholder="Start typing a driver’s name" autocomplete="off" aria-label="Your guess" value="${esc(S.quizGuessText||"")}">
+        <datalist id="quiznames">${names.map(n=>`<option value="${esc(n)}"></option>`).join("")}</datalist>
+        <button class="btn primary" data-act="quiz-guess" ${S.quizGuess&&!q.guesses.includes(S.quizGuess)?"":"disabled"}>Guess for ${avail} pt${avail===1?"":"s"}</button>
+        ${shown<5?`<button class="btn" data-act="quiz-hint">Another hint (−1 pt)</button>`:""}
+      </div>`;
+    const wrong=q.guesses.filter(c=>c!==ans);
+    card=`<div class="qcard">
+      <h2>Driver of the day</h2>
+      <div class="qmeta">${esc(prettyDate)}${q.done?"":`<span>Worth <span class="qpts">${avail}</span> point${avail===1?"":"s"} right now</span>`}</div>
+      ${reveal}
+      <ol class="hints">${list}</ol>
+      ${controls}
+      ${wrong.length?`<div class="wrong">${wrong.map(c=>`<span>${esc(quizName(c))}</span>`).join("")}</div>`:""}
+      ${q.done?`<p class="note" style="margin:12px 0 0">A new driver arrives at midnight Central time.</p>`:`<p class="note" style="margin:12px 0 0">A wrong guess also reveals the next hint. You get one attempt per day.</p>`}
+    </div>`;
+  }
+  const iDone=q&&q.done;
+  const today=players().map(p=>{const x=S.quiz[quizKey(date,p.id)];
+    const val=!x||!x.done?`<span style="color:var(--muted)">${x&&x.hints?"Playing…":"Not yet"}</span>`:iDone||p.id===S.me?`<b>+${x.pts}</b> <span style="color:var(--muted);font-size:.85rem">(${x.solved?x.hints+" hints":"missed"})</span>`:`<span style="color:var(--muted)">Done ✓</span>`;
+    return `<tr><td>${esc(p.name)}</td><td style="text-align:right">${val}</td></tr>`}).join("");
+  const tot=quizTotals();
+  const board=players().map(p=>({p,...tot[p.id]})).sort((a,b)=>b.pts-a.pts||b.perfect-a.perfect);
+  const lead=board.length?board[0].pts:0;
+  const tower=board.map((r,i)=>`<div class="row ${i===0&&r.pts>0?"lead":""}"><div class="posn">${i+1}</div><div class="bar" style="background:${playerColor(r.p.id)}"></div>
+    <div class="nm">${esc(r.p.name)}<small>${r.played} played, ${r.perfect} perfect${r.streak>1?`, ${r.streak}-day streak 🔥`:""}</small></div>
+    <div class="gap">${i===0?(r.pts>0?"Leader":""):(lead-r.pts?"−"+(lead-r.pts):"Tied")}</div><div class="tot">${r.pts}</div></div>`).join("");
+  return `<div class="quizwrap">${card}
+    <div><h3 class="sec">Today</h3><div class="panel" style="padding:6px 14px"><table class="wins">${today}</table></div>
+    ${iDone?"":`<p class="note" style="margin-top:6px">Everyone’s scores are revealed once you’ve played.</p>`}</div>
+    <div><h3 class="sec">Quiz leaderboard</h3><div class="tower">${tower}</div>
+    <p class="note">3 points with three hints, 2 with four, 1 with five.${L().quiz&&L().quiz.inLeague?" Quiz points also count toward the league standings.":""}</p></div>
+  </div>`;
+}
 function renderSetup(){
   if(!S.setupDraft){S.setupDraft=clone(L());S.setupDirty=false}
   const d=S.setupDraft;const dis=S.canWrite&&admin()?"":"disabled";
@@ -944,6 +1133,7 @@ function renderSetup(){
         <label class="field">Points for the mystery spot<input type="number" min="0" step="1" data-set="mystery" value="${esc(d.scoring.mystery??d.scoring.exact)}" ${dis}></label>
       </div>
       <p class="hint">With “Top 3 + mystery spot”, each session gets a random position (like P14) that everyone sees before picks open. Races before the start date keep the top-5 format and their scores.</p>
+      <label class="chk" style="display:flex;gap:8px;align-items:center;margin:14px 0 4px;font-size:.92rem"><input type="checkbox" data-quizleague ${(d.quiz&&d.quiz.inLeague)?"checked":""} ${dis}>Add Driver quiz points to the league standings</label>
       <p class="field" style="margin:14px 0 6px">Points multiplier per session</p>
       <div class="cols2">${SESSIONS.map(s=>`<label class="field">${s.name}<input type="number" min="0" step="0.5" data-weight="${s.k}" value="${esc(((d.scoring.weights||{})[s.k])??1)}" ${dis}></label>`).join("")}</div>
       <p class="hint">For example, set Grand Prix to 2 to make race picks worth double. Leave at 1 for equal scoring.</p>
@@ -1032,7 +1222,7 @@ app.addEventListener("click",async e=>{
       if(await write("league/main",lg)){toast(v?"PIN saved":"PIN removed")}
       break}
     case "backup":{
-      const data={app:"vroom-vroom-of-villainy",version:1,exported:new Date().toISOString(),league:S.league,picks:S.picks,results:S.results};
+      const data={app:"vroom-vroom-of-villainy",version:1,exported:new Date().toISOString(),league:S.league,picks:S.picks,results:S.results,quiz:S.quiz};
       const blob=new Blob([JSON.stringify(data,null,1)],{type:"application/json"});
       const a=document.createElement("a");a.href=URL.createObjectURL(blob);
       a.download=`vroom-vroom-backup-${new Date().toISOString().slice(0,10)}.json`;document.body.appendChild(a);a.click();
@@ -1041,6 +1231,18 @@ app.addEventListener("click",async e=>{
     case "news-more": N.limit+=40;render();break;
     case "news-refresh": loadNews(true);break;
     case "theme":{const order=["auto","light","dark"];const next=order[(order.indexOf(themeMode())+1)%3];lsSet("vvv-theme",next==="auto"?"":next);applyTheme(next);render();break}
+    case "quiz-hint":case "quiz-guess":{
+      const me=players().find(p=>p.id===S.me);if(!me)return;
+      const date=quizDate();const ans=quizAnswer(date);const key=quizKey(date,me.id);
+      const q=clone(S.quiz[key]||{date,playerId:me.id,hints:3,guesses:[],solved:false,done:false,pts:0});
+      if(q.done)return;
+      if(a==="quiz-hint"){if(q.hints<5){q.hints++;await saveQuiz(q)}return}
+      const g=S.quizGuess;if(!g)return;if(q.guesses.includes(g)){toast("You’ve already tried that driver");return}
+      q.guesses.push(g);S.quizGuess="";S.quizGuessText="";
+      if(g===ans){q.solved=true;q.done=true;q.pts=Math.max(0,6-q.hints);toast(`Correct! +${q.pts}`)}
+      else if(q.hints<5){q.hints++;toast("Not quite. Here’s another hint")}
+      else{q.done=true;q.pts=0;toast("Out of guesses for today")}
+      await saveQuiz(q);break}
     case "f1kind": S.f1.kind=b.dataset.v;render();break;
     case "f1refresh": loadF1Standings(true);break;
     case "fetch-all": b.disabled=true;await fetchAllMissing();break;
@@ -1100,14 +1302,20 @@ app.addEventListener("change",e=>{
       lsSet("vvv-pin-"+pid,String(p.pin));
     }
     S.me=pid;lsSet(ME_KEY,pid);S.editing=null;render();return}
+  if(t.dataset.act==="quiz-pick"){}
   if(t.dataset.act==="facts-race"){S.factsRace=t.value;render();return}
   if(t.dataset.act==="race"){S.raceId=t.value;S.session=defaultSession(raceById(t.value));S.editing=null;render();return}
+  if(t.hasAttribute&&t.hasAttribute("data-quizleague")){S.setupDraft.quiz={inLeague:t.checked};markDirty();return}
   if(t.dataset.list&&t.type==="checkbox"){S.setupDraft[t.dataset.list][+t.dataset.i][t.dataset.f]=t.checked;markDirty()}
   if(t.dataset.fmt&&t.tagName==="SELECT"){S.setupDraft.format=S.setupDraft.format||{};S.setupDraft.format.type=t.value;markDirty()}
   if(t.dataset.list&&t.tagName==="SELECT"){S.setupDraft[t.dataset.list][+t.dataset.i][t.dataset.f]=t.value;markDirty()}
 });
 app.addEventListener("input",e=>{
   const t=e.target;
+  if(t.dataset.act==="quiz-pick"){
+    S.quizGuessText=t.value;const n=normName(t.value);
+    const hit=quizPool().find(c=>normName(quizName(c))===n);
+    S.quizGuess=hit||"";const b=document.querySelector('[data-act="quiz-guess"]');if(b)b.disabled=!hit;return}
   if(t.dataset.act==="news-q"){N.q=t.value;N.limit=40;const el=document.getElementById("newslist");if(el)el.innerHTML=renderNewsList();return}
   if(t.dataset.act==="newplayer"){S.newPlayers[+t.dataset.i]=t.value;return}
   if(t.dataset.act==="newseason"){S.newSeason=t.value;return}
@@ -1193,6 +1401,7 @@ function endDrag(cancel){if(!drag)return;const {from,over}=drag;drag=null;if(!ca
 app.addEventListener("pointerup",()=>endDrag(false));
 app.addEventListener("pointercancel",()=>endDrag(true));
 app.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&e.target.dataset&&e.target.dataset.act==="quiz-pick"){e.preventDefault();const b=document.querySelector('[data-act="quiz-guess"]');if(b&&!b.disabled)b.click();return}
   const g=e.target.closest&&e.target.closest("[data-grip]");if(!g)return;
   const from=+g.dataset.grip;const to=e.key==="ArrowUp"?from-1:e.key==="ArrowDown"?from+1:null;
   if(to==null||to<0||to>4)return;e.preventDefault();
@@ -1402,6 +1611,7 @@ async function restoreBackup(file){
   const picks=data.picks||{},results=data.results||{};
   const writes=[["league/main",data.league]];
   Object.entries(picks).forEach(([id,v])=>writes.push(["picks/"+id,v]));
+  Object.entries(data.quiz||{}).forEach(([id,v])=>writes.push(["quiz/"+id,v]));
   Object.entries(results).forEach(([id,v])=>writes.push(["results/"+id,v]));
   /* anything not in the backup is emptied rather than deleted, since the database rules block deletes */
   Object.keys(S.picks).forEach(id=>{if(!picks[id]){const v=S.picks[id];writes.push(["picks/"+id,{raceId:v.raceId||"",playerId:v.playerId||"",updated:Date.now()}])}});
@@ -1459,6 +1669,7 @@ async function init(){
     db.doc("league/main").onSnapshot(s=>{S.league=s.exists?s.data():null;got.l=true;ready()},onErr);
     db.collection("picks").onSnapshot(s=>{const o={};s.docs.forEach(d=>{o[d.id]=d.data()});S.picks=o;got.p=true;ready()},onErr);
     db.collection("results").onSnapshot(s=>{const o={};s.docs.forEach(d=>{o[d.id]=d.data()});S.results=o;got.r=true;ready()},onErr);
+    db.collection("quiz").onSnapshot(s=>{const o={};s.docs.forEach(d=>{o[d.id]=d.data()});S.quiz=o;if(got.l&&got.p&&got.r&&S.tab==="quiz")render()},()=>{});
   }else{
     loadLocal();S.mode="local";render();if(S.league)loadOF1Times();
   }
